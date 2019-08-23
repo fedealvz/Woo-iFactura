@@ -1,0 +1,40 @@
+.wp-core-ui .button.fy-view-invoice-button {
+    content: "";
+    background-image: url("img/invoice-download.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+    cursor: pointer;
+}
+.wp-core-ui .button.fy-invoice-button {
+    content: "";
+    background-image: url("img/invoice.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+    cursor: pointer;
+}
+.wp-core-ui .button.fy-awaiting-button {
+    content: "";
+    background-image: url("img/clock.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+}
+#wc_settings_tab_woo_ifactura_impositive_treatment,
+#wc_settings_tab_woo_ifactura_condicion_venta,
+#wc_settings_tab_woo_ifactura_IVA {
+    padding: 2px !important;
+}
+#ifactura_metabox .inside p {
+    margin-bottom: 0px;
+}
