@@ -9,7 +9,7 @@
 ![GitHub forks](https://img.shields.io/github/forks/fedealvz/Woo-iFactura?style=social)
 ![GitHub stars](https://img.shields.io/github/stars/fedealvz/Woo-iFactura?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/fedealvz/Woo-iFactura?style=social)
-[![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)](https://twitter.com/intent/tweet?text=Factura%2BWooCommerce%20❤️%20@fedealvz&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)
+[![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)](https://twitter.com/intent/tweet?text=iFactura%2BWooCommerce%20❤️%20@fedealvz&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)
 
 Woo-iFactura es un plugin para WooCommerce que permite emitir factura electrónica de AFIP (Argentina) mediante el servicio de [iFactura](https://www.ifactura.com.ar/).
 
@@ -65,7 +65,7 @@ Además del paso anterior, deberás los 3 campos personalizados. Esto se encuent
 
 ¡Las contribuciones son bienvenidas! Podés crear un nuevo Pull request para enviar tus correcciones y se fusionarán después de la moderación.
 
-El soporte de este plugin es comunitario. En caso de problemas, errores o sugerencias, puedes [crear un nuevo Issue](https://github.com/fedealvz/Woo-iFactura/issues/new) o publicar comentarios en los [Issues activos](https://github.com/fedealvz/Woo-iFactura/issues). El staff de iFactura no brinda soporte técnico sobre el desarrollo o implementación de este plugin.
+El soporte de este plugin es comunitario. En caso de problemas, errores o sugerencias, podés [crear un nuevo Issue](https://github.com/fedealvz/Woo-iFactura/issues/new) o publicar un comentario en los [Issues activos](https://github.com/fedealvz/Woo-iFactura/issues). El staff de iFactura no brinda soporte técnico sobre el desarrollo o implementación de este plugin.
 
 ## Licencia
 
