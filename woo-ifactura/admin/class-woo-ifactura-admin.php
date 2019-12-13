@@ -350,7 +350,7 @@ class Woo_iFactura_Admin
         $tipopersona =  $user_meta['billing_tipopersona_ifactura']['0'];
 
         $checkout_fields['billing']['billing_dni_ifactura']  =  array(
-            'label'          => __('CUIT/CUIL/DNI', 'woocommerce'),
+            'label'          => __('CUIT/CUIL/DNI', 'woo-ifactura'),
             'placeholder'    => _x('enter your dni', 'placeholder', 'woo-ifactura'),
             'required'       => true,
             'clear'          => false,
@@ -364,7 +364,7 @@ class Woo_iFactura_Admin
             "3" => "Monotributo"           
         );
         $checkout_fields['billing']['billing_condicionimpositiva_ifactura'] = array(
-            'label'          => __('Tax Treatment', 'woocommerce'),
+            'label'          => __('Tax Treatment', 'woo-ifactura'),
             'required'       => true,
             'clear'          => false,
             'type'           => 'select',
@@ -376,7 +376,7 @@ class Woo_iFactura_Admin
             '2' => "Jurídica",
         );
         $checkout_fields['billing']['billing_tipopersona_ifactura'] = array(
-            'label'          => __('People Registry Type', 'woocommerce'),
+            'label'          => __('People Registry Type', 'woo-ifactura'),
             'required'       => true,
             'clear'          => false,
             'type'           => 'select',
@@ -903,6 +903,9 @@ class Woo_iFactura_Admin
         }
         $cliente->RazonSocial = $razonsoc;
         $cliente->Identificador = get_post_meta($order_id, 'DNI', true);
+        if (empty($cliente->Identificador)) {
+            die(json_encode(array("Exito" => false, "Mensaje" => __('Your DNI is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
+        }
         $cliente->Email = $billing_email;
         $cliente->Direccion = $billing_address_1.' '.$billing_address_2;
         $cliente->Localidad = $billing_city;
@@ -910,8 +913,19 @@ class Woo_iFactura_Admin
         $cliente->Provincia = $this->woo_ifactura_elegirprovincia(html_entity_decode($billing_state));
         $cliente->Provincia_str = html_entity_decode($billing_state);
         $cliente->CondicionImpositiva = get_post_meta($order_id, 'condicionimpositiva', true);
+        if (empty( $cliente->CondicionImpositiva))
+        {
+            die(json_encode(array("Exito" => false, "Mensaje" => __('Tax Treatment is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
+        }
         $cliente->TipoPersona = get_post_meta($order_id, 'tipopersona', true);
+        if (empty( $cliente->TipoPersona))
+        {
+            die(json_encode(array("Exito" => false, "Mensaje" => __('People Registry Type is incorrect.', 'woo-ifactura')), JSON_PRETTY_PRINT));
+        }
         $cliente->TipoDocumento = $this->woo_ifactura_tipodocumento(get_post_meta($order_id, 'condicionimpositiva', true));
+        if (empty($cliente->TipoDocumento)) {
+            die(json_encode(array("Exito" => false, "Mensaje" => __('Tax Treatment is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
+        }
         $cliente->Actualizar = true;
         $factura->Numero = $order_id;       
         $autoenvio = get_option('wc_settings_tab_woo_ifactura_autoenvio');        

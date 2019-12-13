@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: woo-ifactura\n"
-"POT-Creation-Date: 2018-10-17 17:07-0300\n"
-"PO-Revision-Date: 2019-07-31 17:16-0300\n"
+"POT-Creation-Date: 2019-09-06 23:18-0300\n"
+"PO-Revision-Date: 2019-09-06 23:18-0300\n"
 "Last-Translator: \n"
 "Language-Team: ifactura.com.ar\n"
 "Language: es\n"
@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: Poedit 2.2\n"
 "X-Poedit-Basepath: ../admin\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-KeywordsList: __;_e;_x\n"
 "X-Poedit-SearchPath-0: .\n"
 
 #: class-woo-ifactura-admin.php:88
@@ -61,15 +61,20 @@ msgstr "<strong>Error</strong>: El tipo de persona es requerido."
 msgid "CUIT/CUIL/DNI"
 msgstr "Documento (CUIT/CUIL/DNI)"
 
-#: class-woo-ifactura-admin.php:397
+#: class-woo-ifactura-admin.php:354
+msgid "enter your dni"
+msgstr "Ingresar documento"
+
+#: class-woo-ifactura-admin.php:397 class-woo-ifactura-admin.php:907
 msgid "Your DNI is invalid."
 msgstr "El documento es incorrecto."
 
-#: class-woo-ifactura-admin.php:400
+#: class-woo-ifactura-admin.php:400 class-woo-ifactura-admin.php:918
+#: class-woo-ifactura-admin.php:927
 msgid "Tax Treatment is invalid."
 msgstr "La condición impositiva es incorrecta."
 
-#: class-woo-ifactura-admin.php:403
+#: class-woo-ifactura-admin.php:403 class-woo-ifactura-admin.php:923
 msgid "People Registry Type is incorrect."
 msgstr "El tipo de persona es incorrecto."
 
@@ -138,10 +143,12 @@ msgstr "Activar el autoenvio de comprobantes mediante la plataforma iFactura"
 msgid "Contact"
 msgstr "Contacto"
 
-#: class-woo-ifactura-admin.php:955
+#: class-woo-ifactura-admin.php:999
 msgid "Successful generated."
 msgstr "Comprobante generado con éxito."
 
-#: class-woo-ifactura-admin.php:966 class-woo-ifactura-admin.php:972
+#: class-woo-ifactura-admin.php:1010 class-woo-ifactura-admin.php:1016
 msgid "Failed to comunicate."
-msgstr "No se pudo realizar la comunicación con iFactura. Intente nuevamente más tarde."
+msgstr ""
+"No se pudo realizar la comunicación con iFactura. Intente nuevamente más "
+"tarde."
