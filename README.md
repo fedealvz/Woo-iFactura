@@ -53,7 +53,7 @@ En caso de querer facturar ventas previas a la instalación de este plugin, debe
 
 Para ello, en la vista de la orden presionás en el lápiz que está al lado de la sección "Facturación" donde figuran los datos del cliente.
 
-Además del paso anterior, deberás los 3 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: DNI, tipopersona y condicionimpositiva.
+Además del paso anterior, deberás los 3 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: dni y condicionimpositiva.
 
 ## Requisitos
 
