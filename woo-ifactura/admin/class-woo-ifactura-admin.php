@@ -168,27 +168,12 @@ class Woo_iFactura_Admin
                 <select name="billing_condicionimpositiva_ifactura" id="reg_billing_condicionimpositiva_ifactura">
                     <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Responsable Inscripto</option>
                     <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Exento</option>
-                    <option value="3" <?php $elegido == 3 ? "selected" : "" ?>>Monotributo</option>
                     <option value="4" <?php $elegido == 4 ? "selected" : "" ?>>Consumidor Final</option>
                 </select>				
 			</p>
 			<?php
     }
-    public static function woo_ifactura_add_tipopersona_field_to_register()
-    {
-        if (! empty($_POST['billing_tipopersona_ifactura'])) {
-            $elegido = esc_attr_e($_POST['billing_tipopersona_ifactura']);
-        }
-         ?>
-			<p class="form-row form-row-first">
-                <label for="woo_ifactura_billing_tipopersona"><?php _e('People Registry Type', 'woo-ifactura'); ?> <span class="required">*</span></label>
-                <select name="billing_tipopersona_ifactura" id="reg_billing_tipopersona_ifactura">
-                    <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Física</option>
-                    <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Jurídica</option>
-                </select>				
-			</p>
-			<?php
-    }
+
     /**
     * Validates DNI and Condición Impositiva in register form
     *
@@ -208,12 +193,6 @@ class Woo_iFactura_Admin
             }                    
             $errors->add('billing_condicionimpositiva_ifactura_error', __('<strong>Error</strong>: Tax Treatment is required.', 'woo-ifactura'));
         }
-        if (isset($_POST['billing_tipopersona_ifactura']) && empty($_POST['billing_tipopersona_ifactura'])) {
-            if ($_POST["billing_tipopersona_ifactura"] > 2 || $_POST["billing_tipopersona_ifactura"] <= 0) {
-                $errors->add('billing_tipopersona_ifactura_error', __('<strong>Error</strong>: People Registry Type is invalid.', 'woo-ifactura'));
-            }                            
-            $errors->add('billing_tipopersona_ifactura_error', __('<strong>Error</strong>: People Registry Type is incorrect.', 'woo-ifactura'));
-        }
         return $errors;
     }
     
@@ -221,7 +200,6 @@ class Woo_iFactura_Admin
     {
         self::woo_ifactura_add_dni_field_to_my_account();
         self::woo_ifactura_add_condicionimpositiva_field_to_my_account();
-        self::woo_ifactura_add_tipopersona_field_to_my_account();
 
     }
     /**
@@ -265,34 +243,7 @@ class Woo_iFactura_Admin
                 <select name="billing_condicionimpositiva_ifactura" id="ma_billing_condicionimpositiva_ifactura">
                     <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Responsable Inscripto</option>
                     <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Exento</option>
-                    <option value="3" <?php $elegido == 3 ? "selected" : "" ?>>Monotributo</option>
                     <option value="4" <?php $elegido == 4 ? "selected" : "" ?>>Consumidor Final</option>
-                </select>				
-			</p>
-			<?php
-    }
-    /**
-    * Adds Tipo persona to my account form
-    *
-    */
-    public static function woo_ifactura_add_tipopersona_field_to_my_account()
-    {
-        $user_id = get_current_user_id();
-            
-        $user = get_userdata($user_id);
- 
-        if (!$user) {
-            return;
-        } 
-        if (! empty($_POST['billing_condicionimpositiva_ifactura'])) {
-            $elegido = esc_attr($user->billing_tipopersona_ifactura);
-        }
-         ?>
-			<p class="form-row form-row-first">
-                <label for="woo_ifactura_billing_tipopersona"><?php _e('People Registry Type', 'woo-ifactura'); ?> <span class="required">*</span></label>
-                <select name="billing_tipopersona_ifactura" id="ma_billing_tipopersona_ifactura">
-                    <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Física</option>
-                    <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Jurídica</option>
                 </select>				
 			</p>
 			<?php
@@ -301,8 +252,6 @@ class Woo_iFactura_Admin
     {
         $this->woo_ifactura_save_DNI($user_id);
         $this->woo_ifactura_save_condicionimpositiva($user_id);
-        $this->woo_ifactura_save_tipopersona($user_id);
-
     }
     /**
     * Saves DNI in my account and register page
@@ -311,7 +260,7 @@ class Woo_iFactura_Admin
     */
     public function woo_ifactura_save_DNI($user_id)
     {
-        if (isset($_POST[ 'billing_dni_ifactura' ])) {
+        if (isset($_POST[ 'billing_dni_ifactura' ]) && preg_match('/^[0-9]*$/', $_POST['billing_dni_ifactura'])) {
             update_user_meta($user_id, 'billing_dni_ifactura', htmlentities($_POST[ 'billing_dni_ifactura' ]));
         }
     }
@@ -327,17 +276,6 @@ class Woo_iFactura_Admin
         }
     }
     /**
-    * Saves Condición Impositiva in my account and register page
-    *
-    *
-    */
-    public function woo_ifactura_save_tipopersona($user_id)
-    {
-        if (isset($_POST[ 'billing_tipopersona_ifactura' ])) {
-            update_user_meta($user_id, 'billing_tipopersona_ifactura', htmlentities($_POST[ 'billing_tipopersona_ifactura' ]));
-        }
-    }
-    /**
     * Add DNI and Condición Impositiva field to checkout form
     *
     */
@@ -347,11 +285,10 @@ class Woo_iFactura_Admin
          
         $billing_dni =  $user_meta['billing_dni_ifactura']['0'];
         $condicionimpositiva = $user_meta['billing_condicionimpositiva_ifactura']['0'];
-        $tipopersona =  $user_meta['billing_tipopersona_ifactura']['0'];
 
         $checkout_fields['billing']['billing_dni_ifactura']  =  array(
             'label'          => __('CUIT/CUIL/DNI', 'woo-ifactura'),
-            'placeholder'    => _x('enter your dni', 'placeholder', 'woo-ifactura'),
+            'placeholder'    => __('enter your dni', 'woo-ifactura'),
             'required'       => true,
             'clear'          => false,
             'type'           => 'text',
@@ -360,8 +297,7 @@ class Woo_iFactura_Admin
         $opciones_condicion = array(
             "4" => "Consumidor Final",
             '1' => "Responsable Inscripto",
-            "2" => "Exento",
-            "3" => "Monotributo"           
+            "2" => "Exento"       
         );
         $checkout_fields['billing']['billing_condicionimpositiva_ifactura'] = array(
             'label'          => __('Tax Treatment', 'woo-ifactura'),
@@ -371,19 +307,6 @@ class Woo_iFactura_Admin
             'options'       => $opciones_condicion,
             'class'          => array('form-row-wide'),
         );
-        $opciones_tipopersona = array(
-            "1" => "Física",
-            '2' => "Jurídica",
-        );
-        $checkout_fields['billing']['billing_tipopersona_ifactura'] = array(
-            'label'          => __('People Registry Type', 'woo-ifactura'),
-            'required'       => true,
-            'clear'          => false,
-            'type'           => 'select',
-            'options'       => $opciones_tipopersona,
-            'class'          => array('form-row-wide'),
-        );
-
         return $checkout_fields;
     }
     
@@ -399,10 +322,6 @@ class Woo_iFactura_Admin
         if (! $_POST['billing_condicionimpositiva_ifactura'] || (intval($_POST['billing_condicionimpositiva_ifactura']) > 4) || (intval($_POST['billing_condicionimpositiva_ifactura']) <= 0)) {
             wc_add_notice(__('Tax Treatment is invalid.', 'woo-ifactura'), 'error');
         }
-        if (! $_POST['billing_tipopersona_ifactura'] || (intval($_POST['billing_tipopersona_ifactura']) > 2) || (intval($_POST['billing_condicionimpositiva_ifactura']) <= 0)) {
-            wc_add_notice(__('People Registry Type is incorrect.', 'woo-ifactura'), 'error');
-        }
-
     }
     
     /**
@@ -411,16 +330,12 @@ class Woo_iFactura_Admin
     */
     public static function woo_ifactura_update_order_meta($order_id)
     {
-        if (! empty($_POST['billing_dni_ifactura'])) {
+        if (! empty($_POST['billing_dni_ifactura']) && preg_match('/^[0-9]*$/', $_POST['billing_dni_ifactura'])) {
             update_post_meta($order_id, 'DNI', sanitize_text_field($_POST['billing_dni_ifactura']));
         }
         if (! empty($_POST['billing_condicionimpositiva_ifactura'])) {
             update_post_meta($order_id, 'condicionimpositiva', sanitize_text_field($_POST['billing_condicionimpositiva_ifactura']));
         }
-        if (! empty($_POST['billing_tipopersona_ifactura'])) {
-            update_post_meta($order_id, 'tipopersona', sanitize_text_field($_POST['billing_tipopersona_ifactura']));
-        }
-
     }
     
     /*
@@ -431,7 +346,7 @@ class Woo_iFactura_Admin
     {
         echo '<p><strong>'.__('DNI',"woo-ifactura").':</strong> ' . get_post_meta($this->get_order_id($order), 'DNI', true) . '</p>
             <p><strong>'.__('Tax Treatment',"woo-ifactura").':</strong> ' . $this->woo_ifactura_gettipocondicionimpositiva(get_post_meta($this->get_order_id($order), 'condicionimpositiva', true)) . '</p>
-            <p><strong>'.__('People Registry Type',"woo-ifactura").':</strong> ' . $this->woo_ifactura_gettipopersona(get_post_meta($this->get_order_id($order), 'tipopersona', true)) . '</p>';
+            <p><strong>'.__('People Registry Type',"woo-ifactura").':</strong> ' . $this->woo_ifactura_gettipopersona(get_post_meta($this->get_order_id($order), 'DNI', true)) . '</p>';
     }    
     /*
     * Shows customer DNI in email
@@ -446,11 +361,6 @@ class Woo_iFactura_Admin
     public static function woo_ifactura_display_condicionimpositiva_in_email_fields($keys)
     {
         $keys['condicionimpositiva'] = 'condicionimpositiva';        
-        return $keys;
-    }
-    public static function woo_ifactura_display_tipopersona_in_email_fields($keys)
-    {
-        $keys['tipopersona'] = 'tipopersona';        
         return $keys;
     }
     /*
@@ -917,7 +827,7 @@ class Woo_iFactura_Admin
         {
             die(json_encode(array("Exito" => false, "Mensaje" => __('Tax Treatment is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
         }
-        $cliente->TipoPersona = get_post_meta($order_id, 'tipopersona', true);
+        $cliente->TipoPersona = $this->woo_ifactura_gettipopersona_id(get_post_meta($order_id, 'DNI', true));
         if (empty( $cliente->TipoPersona))
         {
             die(json_encode(array("Exito" => false, "Mensaje" => __('People Registry Type is incorrect.', 'woo-ifactura')), JSON_PRETTY_PRINT));
@@ -1175,19 +1085,46 @@ class Woo_iFactura_Admin
     }
     public function woo_ifactura_gettipopersona($id)
     {
-        switch ($id) {
-            case '1':
-                return "Física";
-                break;
-            case '2':
+        $dni_str = strval($id);
+        if (strlen($dni_str) > 8)
+        {
+            $codigo_tipo = substr($dni_str,0,2);
+            if ($codigo_tipo == "30" || $codigo_tipo == "33" || $codigo_tipo == "34" )
+            {
                 return "Jurídica";
-                break;
-            default:
+            }
+            else if($codigo_tipo == "20" || $codigo_tipo == "23" || $codigo_tipo == "24" || $codigo_tipo == "27")
+            {
+                return "Física";
+            }
+            else
+            {
                 return "Desconocido";
-                # code...
-                break;
+            }
+        }
+        else if ($dni_str > 0) {
+            return "Física";
+        }
+        else
+        {
+            return "Desconocido";
         }
     }
+    public function woo_ifactura_gettipopersona_id($dni)
+    {
+        $dni_str = strval($dni);
+        if (strlen($dni_str) > 8) {
+            $codigo_tipo = substr($dni_str, 0, 2);
+            if ($codigo_tipo == "30" || $codigo_tipo == "33" || $codigo_tipo == "34") {
+                return 2;
+            } elseif ($codigo_tipo == "20" || $codigo_tipo == "23" || $codigo_tipo == "24" || $codigo_tipo == "27") {
+                return 1;
+            } else {
+                return 1;
+            }
+        } else {
+            return 1;
+        }
 
-
+    }
 }
