@@ -45,7 +45,8 @@ Si activaste "auto-envío", el envío de la factura al cliente no requiere ningu
 ## Consideraciones importantes
 
 * Funciona únicamente con moneda configurada en pesos argentinos
-* Agrega un campo "DNI" en el proceso de checkout, por lo que si ya habías hecho ajustes para obtener el DNI del cliente, deberás quitarlo para evitar redundancias.
+* Agrega un campo "DNI" en el proceso de checkout, por lo que si ya habías hecho ajustes para obtener el documento del cliente, deberás quitarlo para evitar redundancias.
+* El campo "DNI" se usa en referencia a cualquier documento (DNI, CUIT o CUIL) y se mantiene el mismo nombre por cuestiones de retrocompatibilidad del plugin.
 
 ## Ventas previas a la instalación del plugin
 
@@ -53,7 +54,7 @@ En caso de querer facturar ventas previas a la instalación de este plugin, debe
 
 Para ello, en la vista de la orden presionás en el lápiz que está al lado de la sección "Facturación" donde figuran los datos del cliente.
 
-Además del paso anterior, deberás los 3 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: dni y condicionimpositiva.
+Además del paso anterior, deberás los 3 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: "DNI" y "condicionimpositiva".
 
 ## Requisitos
 
