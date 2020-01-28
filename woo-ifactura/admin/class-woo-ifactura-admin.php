@@ -120,8 +120,8 @@ class Woo_iFactura_Admin
         global $current_screen;
          
         if ($current_screen->base == 'woocommerce_page_wc-settings') {
-            if ('yes'==get_option('woocommerce_calc_taxes')) {
-                echo '<div class="notice notice-error"><p>Atención: El cálculo de impuestos debe estar desactivado para que Woo iFactura funcione correctamente en esta versión. </p></div>';
+            if ('no'==get_option('woocommerce_calc_taxes') && get_option('wc_settings_tab_woo_ifactura_impositive_treatment') == 1) {
+                echo '<div class="notice notice-error"><p>Atención: Tu WooCommerce no tiene activado y configurado correctamente los impuestos para trabajar con IVA.</p></div>';
             }
         }
     }
@@ -589,45 +589,44 @@ class Woo_iFactura_Admin
             foreach ($shipping_data as $k=>$sm) {                
                 /** TAXES shipping **/                
                 //if( false !== get_option('wc_settings_tab_woo_ifactura_IVA') ){
-                if (is_plugin_active('woo-ifactura-iva/woo-ifactura-iva.php')) {
+                $iva_total = 0;
+                if ($it == 1) //RESPONSABLE INSCRIPTO
+                {
                     if ($sm['total_tax']==0 && $option_taxes == 'no') {
-                        $iva = get_option('wc_settings_tab_woo_ifactura_IVA');
-                        
+                        $iva = 21;
                         if ($woocommerce->version >= "3.0") {
-                            $precio = $this->woo_item_price($it, $sm->get_total(), $iva);
+                            $precio = $sm->get_total();
                         } else {
-                            $precio  = $this->woo_item_price($it, $sm['item_meta']['cost'][0], $iva);
+                            $precio  = $sm['item_meta']['cost'][0];
                         }
+                        $iva_total = round((floatval($iva) * floatval($precio)) / (100 + floatval($iva)), 2);
+                        $total_linea = round($precio - $iva_total, 2);
                     } else {
                         if ($sm['total_tax']==0) {
                             $iva = 0;
                         } else {
                             $iva = (($sm['total_tax']*100)/$sm['total']);
-                        }                       
+                        }                  
                         
                         if ($woocommerce->version >= "3.0") {
                             $precio = $sm->get_total();
                         } else {
                             $precio  = $sm['item_meta']['cost'][0];
                         }
+                        $iva_total = round($item_meta['total_tax'], 2);
+                        $total_linea = round(floatval($sm['total']) + $iva_total, 2);
                     }
-                } else {
-                    $iva = 21;
-                   if ($woocommerce->version >= "3.0") {
+                }
+                else
+                {
+                    $iva = 0;
+                    if ($woocommerce->version >= "3.0") {
                         $precio = $sm->get_total();
                     } else {
                         $precio  = $sm['item_meta']['cost'][0];
                     }
-                    if (in_array(intval($it),array(1,2)) ) //CUANDO ES INSCRIPTIO O MONOTRIBUTO
-                    {
-                        $iva = 21;
-                    }
-                    else
-                    {
-                        $iva = 0;
-                    }
-                }                
-                
+                    $total_linea = $precio;
+                }
                 if ($woocommerce->version >= "3.0") {
                     $shipping_name = $sm->get_name();
                 } else {
@@ -636,7 +635,6 @@ class Woo_iFactura_Admin
                 if (!empty(floatval($precio)))
                 {
                     $porcentaje_iva = $this->woo_ifactura_alicuotaiva($iva);
-                    $iva_total = round((floatval($iva) * floatval($precio)) / (100 + floatval($iva)), 2);
                     array_push(
                         $shipping_methods,                
                         array(                    
@@ -647,7 +645,7 @@ class Woo_iFactura_Admin
                             'AlicuotaIVA' => $porcentaje_iva,                    
                             'IVA' => round($iva_total ,2),                      
                             'ValorUnitario' => round(floatval($precio),2),
-                            'Total' => round($precio - $iva_total,2)                            
+                            'Total' => round($total_linea,2)
                         )                    
                     );
                     $total+=$precio;   
@@ -659,19 +657,11 @@ class Woo_iFactura_Admin
         $order_fees = array();    
         if (is_array($fees)) {
             foreach ($fees as $k=>$v) {
-                if (in_array(intval($it),array(1,2)) ) //CUANDO ES INSCRIPTIO O MONOTRIBUTO
-                {
-                    $iva = 21;
-                }
-                else
-                {
-                    $iva = 0;
-                }
                 $precio = $v->get_total();
                 if (!empty(floatval($precio)))
                 {
-                    $porcentaje_iva = $this->woo_ifactura_alicuotaiva($iva);
-                    $iva_total = round((floatval($iva) * floatval($precio)) / (100 + floatval($iva)), 2); 
+                    $porcentaje_iva = $this->woo_ifactura_alicuotaiva(0);
+                    $iva_total = 0;
                     array_push(
                         $order_fees,                
                         array(                    
@@ -680,7 +670,7 @@ class Woo_iFactura_Admin
                             'Codigo' => '',                        
                             'Descripcion' => $v->get_name(),                        
                             'AlicuotaIVA' => $porcentaje_iva,
-                            'IVA' => round($iva_total ,2),                            
+                            'IVA' => $iva_total,                           
                             'ValorUnitario' => round(floatval($precio),2),
                             'Total' => round($precio - $iva_total,2)                          
                         )                    
@@ -742,38 +732,37 @@ class Woo_iFactura_Admin
             }            
             if (!empty(floatval($item_total)))
             {
-                /* TAXES para productos */            
-                /* Si existe el plugin utiliza taxes, sino el IVA es de 21% siempre */
-                if (is_plugin_active('woo-ifactura-iva/woo-ifactura-iva.php')) {
-                    $item_meta = $item->get_data();            
+                /* TAXES para productos */
+                $iva_total = 0;
+                if ($it == 1) //RESPONSABLE INSCRIPTO
+                {
+                    $item_meta = $item->get_data();
                     if ($item_meta['total_tax']==0 && $option_taxes == 'no') {
-                        $iva = get_option('wc_settings_tab_woo_ifactura_IVA');
-                        
-                        $precio = $this->woo_item_price($it, $price, $iva);
+                        //NO TIENE LO IMPUESTOS CONFIGURADOS Y LO CONSIDERA QUE ESTAN INCLUIDOS EN EL VALOR FINAL
+                        $iva = 21;
+                        $iva_total = round((floatval($iva) * floatval($item_total)) / (100 + floatval($iva)), 2);
+                        $total_linea = round($item_total - $iva_total,2);
                     } else {
+                        //LO TIENE POR SEPARADO DADO QUE TIENE CONFIGURADOS LOS IMPUESTOS
                         $tax = new WC_Tax();                
-                        $taxes = array_shift($tax->get_rates($item_meta['tax_class']));
-                        
+                        $taxes = array_shift($tax->get_rates($item_meta['tax_class']));                        
                         if ($item_meta['total_tax']==0) {
                             $iva = 0;
                         } else {
                             $iva = $taxes['rate'];
-                        }                    
-                        /* Cuando se utiliza los impuestos integrados no quito el IVA */                    
-                        $precio = $price;
+                        }                      
+                        $iva_total = round($item_meta['total_tax'],2);
+                        $total_linea = round($item_total,2);
                     }
-                } else {
-                    if (in_array(intval($it),array(1,2)) ) //CUANDO ES INSCRIPTIO O MONOTRIBUTO
-                    {
-                        $iva = 21;
-                    }
-                    else
-                    {
-                        $iva = 0;
-                    }
-                }            
+                }
+                else
+                {
+                    //SIN IMPUESTOS, MONOTRIBUTO O EXENTO
+                    $iva_total = 0;
+                    $iva = 0;
+                    $total_linea = round($item_total - $iva_total, 2);
+                }       
                 $porcentaje_iva = $this->woo_ifactura_alicuotaiva($iva);
-                $iva_total = round((floatval($iva) * floatval($item_total)) / (100 + floatval($iva)), 2);
                 array_push($Bienes, array(            
                     'Bonificacion' => 0,                
                     'Cantidad' => $item_quantity,                
@@ -782,7 +771,7 @@ class Woo_iFactura_Admin
                     'AlicuotaIVA' => $porcentaje_iva,                    
                     'IVA' => round($iva_total,2),                 
                     'ValorUnitario' => round(floatval($price),2),
-                    'Total' => round($item_total - $iva_total,2)       
+                    'Total' => $total_linea       
                 ));            
                 $total+= $item['qty'] * $item_total;
             }
