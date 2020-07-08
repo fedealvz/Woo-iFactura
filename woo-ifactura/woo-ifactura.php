@@ -10,7 +10,7 @@
 * Domain Path: /languages/
 * License: GPL v3 or later
 * WC requires at least: 3.0.0
-* WC tested up to: 3.9.0
+* WC tested up to: 4.2.0
 *
 * Copyright: © 2019 Federico Alvarez
 * License: GNU General Public License v3.0
