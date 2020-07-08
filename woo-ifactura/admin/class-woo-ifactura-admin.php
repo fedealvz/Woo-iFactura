@@ -846,22 +846,71 @@ class Woo_iFactura_Admin
         $i = 0;
         $totalfinal = 0;
         $iva = 0;
+        $alicuotaDetectadaIVA = array();
+        $alicuotaDetectadaTotal = array();
+        $valorNegativosDetectados = false;
         foreach($Bienes as $linea)
         {
-            $factura->DetalleFactura[$i]->Cantidad = intval($linea['Cantidad']);
-            $factura->DetalleFactura[$i]->ValorUnitario =  floatval($linea['ValorUnitario']);
-            $factura->DetalleFactura[$i]->Total =  floatval($linea['Total']);
-            $factura->DetalleFactura[$i]->Descripcion =  $linea['Descripcion'];
-            $factura->DetalleFactura[$i]->Codigo =  $linea['Codigo'];
-            $factura->DetalleFactura[$i]->AlicuotaIVA = $linea['AlicuotaIVA'];
-            $factura->DetalleFactura[$i]->UnidadMedida = 7;
-            $factura->DetalleFactura[$i]->Bonificacion = $linea['Bonificacion'];
-            $factura->DetalleFactura[$i]->IVA = floatval($linea['IVA']);            
-            $factura->DetalleFactura[$i]->ConceptoFactura = 1; //PRODUCTOS           
-            $totalfinal = $totalfinal + $linea['Total'];
-            $iva = $iva + $linea['IVA'];
-            $i = $i + 1;
+            if (floatval($linea['Total']) < 0)
+            {
+                $valorNegativosDetectados = true;
+            }
+            $alicuotaDetectada = $linea['AlicuotaIVA'];
+            $totalfinal = $totalfinal + floatval($linea['Total']);
+            $alicuotaDetectadaTotal[$alicuotaDetectada] = floatval($alicuotaDetectadaTotal[$alicuotaDetectada]) + floatval($linea['Total']);
         }
+        if ($valorNegativosDetectados)
+        {
+            if (count($alicuotaDetectadaTotal) > 2)
+            {
+                die(json_encode(array("Exito" => false, "Mensaje" => "No se puede calcular el descuento global sobre productos con distintos porcentajes de IVA.", JSON_PRETTY_PRINT)));
+            }
+            else
+            {
+                $tipoIVA = max(array_keys($alicuotaDetectadaTotal));
+                $porcentajeIVA = $this->woo_ifactura_porcentajeIVA($tipoIVA);
+                $valorIVA = round($totalfinal * (1 + $porcentajeIVA),2);
+                $iva = $valorIVA;
+                $factura->DetalleFactura[$i]->Cantidad = 1;
+                $factura->DetalleFactura[$i]->ValorUnitario = round($totalfinal,2);
+                $factura->DetalleFactura[$i]->Total = round($totalfinal,2);
+                $factura->DetalleFactura[$i]->Descripcion =  "Segun venta " . $order_id;
+                $factura->DetalleFactura[$i]->Codigo =  "";
+                $factura->DetalleFactura[$i]->AlicuotaIVA = $tipoIVA;
+                $factura->DetalleFactura[$i]->UnidadMedida = 7;
+                $factura->DetalleFactura[$i]->Bonificacion = 0.0;
+                $factura->DetalleFactura[$i]->IVA = round($valorIVA, 2);
+                $factura->DetalleFactura[$i]->ConceptoFactura = 1; //PRODUCTOS
+                $gettotals = floatval($order->get_total());
+                $totalFactura = floatval(($iva + $totalfinal));
+                if (abs($gettotals - $totalFactura) >= 1)
+                {
+                    die(json_encode(array("Exito" => false, "Mensaje" => "No se puede calcular el descuento global sobre los productos dado que el descuento no esta aplicado sobre los impuestos tambien. Por ende no se puede calcular el IVA verdadero." . $gettotals, JSON_PRETTY_PRINT)));
+                }
+            }
+               
+        }
+        else
+        {
+            $totalfinal = 0;
+            foreach($Bienes as $linea)
+            {
+                $factura->DetalleFactura[$i]->Cantidad = intval($linea['Cantidad']);
+                $factura->DetalleFactura[$i]->ValorUnitario =  floatval($linea['ValorUnitario']);
+                $factura->DetalleFactura[$i]->Total =  floatval($linea['Total']);
+                $factura->DetalleFactura[$i]->Descripcion =  $linea['Descripcion'];
+                $factura->DetalleFactura[$i]->Codigo =  $linea['Codigo'];
+                $factura->DetalleFactura[$i]->AlicuotaIVA = $linea['AlicuotaIVA'];
+                $factura->DetalleFactura[$i]->UnidadMedida = 7;
+                $factura->DetalleFactura[$i]->Bonificacion = $linea['Bonificacion'];
+                $factura->DetalleFactura[$i]->IVA = floatval($linea['IVA']);            
+                $factura->DetalleFactura[$i]->ConceptoFactura = 1; //PRODUCTOS           
+                $totalfinal = $totalfinal + $linea['Total'];
+                $iva = $iva + $linea['IVA'];
+                $i = $i + 1;
+            }
+        }
+       
         $factura->Cliente = $cliente;
         $data->Email = get_option('wc_settings_tab_woo_ifactura_user');
         $data->Password =get_option('wc_settings_tab_woo_ifactura_hash');
@@ -970,6 +1019,29 @@ class Woo_iFactura_Admin
         else
         {
             return 1;
+        }
+    }
+    public function woo_ifactura_porcentajeIVA($idIVA)
+    {
+        switch ($idIVA) {
+            case 1:
+                return 0.0;
+                break;
+            case 2:
+                return 10.5;
+                break;
+            case 3:
+                return 21.0;
+                break;
+            case 4:
+                return 27.0;
+                break;
+            case 5:
+                return 5.0;
+                break;
+            default:
+                return 0.0;
+                break;
         }
     }
     public function woo_ifactura_tipodocumento($condicionimpositiva)
