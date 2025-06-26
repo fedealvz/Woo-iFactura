@@ -1,154 +1,198 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: woo-ifactura\n"
-"POT-Creation-Date: 2019-09-06 23:16-0300\n"
-"PO-Revision-Date: 2019-09-06 23:17-0300\n"
+"POT-Creation-Date: 2023-03-09 18:21-0300\n"
+"PO-Revision-Date: 2023-03-09 18:30-0300\n"
 "Last-Translator: \n"
 "Language-Team: ifactura.com.ar\n"
 "Language: es_AR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.2\n"
-"X-Poedit-Basepath: ../admin\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+"X-Poedit-Basepath: ../admin\n"
 "X-Poedit-KeywordsList: __;_e;_x\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: class-woo-ifactura-admin.php:88
+#: class-woo-ifactura-admin.php:89
 msgid "iFactura Settings"
 msgstr "Configuración de iFactura"
 
-#: class-woo-ifactura-admin.php:153 class-woo-ifactura-admin.php:432
+#: class-woo-ifactura-admin.php:154 class-woo-ifactura-admin.php:352
 msgid "DNI"
 msgstr "Documento (CUIT/CUIL/DNI)"
 
-#: class-woo-ifactura-admin.php:167 class-woo-ifactura-admin.php:264
-#: class-woo-ifactura-admin.php:367 class-woo-ifactura-admin.php:433
+#: class-woo-ifactura-admin.php:168 class-woo-ifactura-admin.php:244
+#: class-woo-ifactura-admin.php:307 class-woo-ifactura-admin.php:353
 msgid "Tax Treatment"
 msgstr "Condición Impositiva"
 
-#: class-woo-ifactura-admin.php:184 class-woo-ifactura-admin.php:292
-#: class-woo-ifactura-admin.php:379 class-woo-ifactura-admin.php:434
-msgid "People Registry Type"
-msgstr "Tipo de Persona"
-
-#: class-woo-ifactura-admin.php:200
+#: class-woo-ifactura-admin.php:187
 msgid "<strong>Error</strong>: DNI must be a numeric value!."
 msgstr "<strong>Error</strong>: El documento debe ser un valor numérico."
 
-#: class-woo-ifactura-admin.php:203
+#: class-woo-ifactura-admin.php:190
 msgid "<strong>Error</strong>: DNI is required!."
 msgstr "<strong>Error</strong>: El documento es requerido."
 
-#: class-woo-ifactura-admin.php:207
+#: class-woo-ifactura-admin.php:194
 msgid "<strong>Error</strong>: Tax Treatment is invalid."
 msgstr "<strong>Error</strong>: La condición impositiva es incorrecta."
 
-#: class-woo-ifactura-admin.php:209
+#: class-woo-ifactura-admin.php:196
 msgid "<strong>Error</strong>: Tax Treatment is required."
 msgstr "<strong>Error</strong>: La condición impositiva es requerida."
 
-#: class-woo-ifactura-admin.php:213
-msgid "<strong>Error</strong>: People Registry Type is invalid."
-msgstr "<strong>Error</strong>: El tipo de persona es incorrecto."
-
-#: class-woo-ifactura-admin.php:215
-msgid "<strong>Error</strong>: People Registry Type is incorrect."
-msgstr "<strong>Error</strong>: El tipo de persona es requerido."
-
-#: class-woo-ifactura-admin.php:241 class-woo-ifactura-admin.php:353
+#: class-woo-ifactura-admin.php:221 class-woo-ifactura-admin.php:293
 msgid "CUIT/CUIL/DNI"
 msgstr "Documento (CUIT/CUIL/DNI)"
 
-#: class-woo-ifactura-admin.php:354
+#: class-woo-ifactura-admin.php:294
 msgid "enter your dni"
 msgstr "Ingresar documento"
 
-#: class-woo-ifactura-admin.php:397 class-woo-ifactura-admin.php:907
+#: class-woo-ifactura-admin.php:323
 msgid "Your DNI is invalid."
 msgstr "El documento es incorrecto."
 
-#: class-woo-ifactura-admin.php:400 class-woo-ifactura-admin.php:918
-#: class-woo-ifactura-admin.php:927
+#: class-woo-ifactura-admin.php:326
 msgid "Tax Treatment is invalid."
 msgstr "La condición impositiva es incorrecta."
 
-#: class-woo-ifactura-admin.php:403 class-woo-ifactura-admin.php:923
-msgid "People Registry Type is incorrect."
-msgstr "El tipo de persona es incorrecto."
+#: class-woo-ifactura-admin.php:354
+msgid "People Registry Type"
+msgstr "Tipo de Persona"
 
-#: class-woo-ifactura-admin.php:462
+#: class-woo-ifactura-admin.php:355
+msgid "Invoice Type"
+msgstr "Tipo de comprobante"
+
+#: class-woo-ifactura-admin.php:378
 msgid "ifactura"
 msgstr "iFactura"
 
-#: class-woo-ifactura-admin.php:485 class-woo-ifactura-admin.php:509
+#: class-woo-ifactura-admin.php:394 class-woo-ifactura-admin.php:417
 msgid "create invoice"
 msgstr "Crear comprobante"
 
-#: class-woo-ifactura-admin.php:485 class-woo-ifactura-admin.php:509
-#: class-woo-ifactura-admin.php:608
+#: class-woo-ifactura-admin.php:394 class-woo-ifactura-admin.php:417
+#: class-woo-ifactura-admin.php:598
 msgid "Invoice"
 msgstr "Comprobante"
 
-#: class-woo-ifactura-admin.php:497 class-woo-ifactura-admin.php:618
+#: class-woo-ifactura-admin.php:405 class-woo-ifactura-admin.php:440
+#: class-woo-ifactura-admin.php:608 class-woo-ifactura-admin.php:639
 msgid "awaiting invoice"
 msgstr "Esperando el procesamiento del comprobante"
 
-#: class-woo-ifactura-admin.php:503 class-woo-ifactura-admin.php:626
+#: class-woo-ifactura-admin.php:411 class-woo-ifactura-admin.php:616
 msgid "view invoice"
 msgstr "Ver el comprobante generado"
 
-#: class-woo-ifactura-admin.php:529
+#: class-woo-ifactura-admin.php:427 class-woo-ifactura-admin.php:452
+#: class-woo-ifactura-admin.php:628
+msgid "cancel invoice"
+msgstr "Crear nota de crédito"
+
+#: class-woo-ifactura-admin.php:446 class-woo-ifactura-admin.php:647
+msgid "view invoice cancel"
+msgstr "Ver nota de crédito generada"
+
+#: class-woo-ifactura-admin.php:464
+msgid "delete invoice"
+msgstr "Borrar comprobantes"
+
+#: class-woo-ifactura-admin.php:482
 msgid "Input parameters"
 msgstr "Parámetros de entrada"
 
-#: class-woo-ifactura-admin.php:535
+#: class-woo-ifactura-admin.php:488
 msgid "Activate test mode"
 msgstr "Activar entorno de pruebas (demo)"
 
-#: class-woo-ifactura-admin.php:537
+#: class-woo-ifactura-admin.php:490
 msgid "Activate sandbox mode."
 msgstr "Se generarán comprobantes sin validez fiscal para el entorno demo."
 
-#: class-woo-ifactura-admin.php:541
+#: class-woo-ifactura-admin.php:494
 msgid "User"
 msgstr "Usuario"
 
-#: class-woo-ifactura-admin.php:548
+#: class-woo-ifactura-admin.php:501
 msgid "Hash"
 msgstr "Contraseña"
 
-#: class-woo-ifactura-admin.php:555
+#: class-woo-ifactura-admin.php:508
 msgid "Point of sale"
 msgstr "Punto de Venta"
 
-#: class-woo-ifactura-admin.php:557
+#: class-woo-ifactura-admin.php:510
 msgid "Point of sale for invoices"
 msgstr "Punto de venta (por ejemplo,\"5\")"
 
-#: class-woo-ifactura-admin.php:562
+#: class-woo-ifactura-admin.php:515
 msgid "Tax treatment"
 msgstr "Condición impositiva"
 
-#: class-woo-ifactura-admin.php:574
+#: class-woo-ifactura-admin.php:527
 msgid "Autosend invoice"
 msgstr "Activar auto-envío"
 
-#: class-woo-ifactura-admin.php:576
+#: class-woo-ifactura-admin.php:529
 msgid "Autosend desc"
 msgstr "Activar el autoenvio de comprobantes mediante la plataforma iFactura"
 
-#: class-woo-ifactura-admin.php:584
+#: class-woo-ifactura-admin.php:574
 msgid "Contact"
 msgstr "Contacto"
 
-#: class-woo-ifactura-admin.php:999
-msgid "Successful generated."
-msgstr "Comprobante generado con éxito."
-
-#: class-woo-ifactura-admin.php:1010 class-woo-ifactura-admin.php:1016
-msgid "Failed to comunicate."
+#: class-woo-ifactura-admin.php:678
+msgid "DEBUG estado de facturación: "
 msgstr ""
-"No se pudo realizar la comunicación con iFactura. Intente nuevamente más "
-"tarde."
+
+#: class-woo-ifactura-admin.php:688
+msgid "Generando comprobante en iFactura"
+msgstr "Generando comprobante en iFactura"
+
+#: class-woo-ifactura-admin.php:693
+msgid "Creación de factura correcta."
+msgstr "Creación de factura correcta."
+
+#: class-woo-ifactura-admin.php:698 class-woo-ifactura-admin.php:702
+msgid "Fallo la creación de la factura: "
+msgstr "Fallo la creación de la factura: "
+
+#: class-woo-ifactura-admin.php:711
+msgid "DEBUG la creación de la factura: Estado seleccionado"
+msgstr ""
+
+#: custom/IVACampoCustom.class.php:9 custom/IVACampoCustom.class.php:34
+#: custom/IVAShippingCampoCustom.class.php:22
+msgid "IVA"
+msgstr "IVA"
+
+#: custom/IVACampoCustom.class.php:11 custom/IVACampoCustom.class.php:37
+#: custom/IVAShippingCampoCustom.class.php:25
+msgid "IVA %"
+msgstr "Porcentaje IVA"
+
+#: custom/IVACampoCustom.class.php:35
+#: custom/IVAShippingCampoCustom.class.php:23
+msgid "IVA iFactura"
+msgstr "IVA"
+
+#~ msgid "<strong>Error</strong>: People Registry Type is invalid."
+#~ msgstr "<strong>Error</strong>: El tipo de persona es incorrecto."
+
+#~ msgid "<strong>Error</strong>: People Registry Type is incorrect."
+#~ msgstr "<strong>Error</strong>: El tipo de persona es requerido."
+
+#~ msgid "People Registry Type is incorrect."
+#~ msgstr "El tipo de persona es incorrecto."
+
+#~ msgid "Successful generated."
+#~ msgstr "Comprobante generado con éxito."
+
+#~ msgid "Failed to comunicate."
+#~ msgstr "No se pudo realizar la comunicación con iFactura. Intente nuevamente más tarde."

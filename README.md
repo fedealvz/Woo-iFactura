@@ -11,7 +11,7 @@
 ![GitHub watchers](https://img.shields.io/github/watchers/fedealvz/Woo-iFactura?style=social)
 [![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)](https://twitter.com/intent/tweet?text=iFactura%2BWooCommerce%20❤️%20@fedealvz&url=https%3A%2F%2Fgithub.com%2Ffedealvz%2FWoo-iFactura)
 
-Woo-iFactura es un plugin para WooCommerce que permite emitir factura electrónica de AFIP (Argentina) mediante el servicio de [iFactura](https://www.ifactura.com.ar/).
+Woo-iFactura es un plugin para WooCommerce que permite emitir factura electrónica de ARCA (AFIP) mediante el servicio de [iFactura](https://www.ifactura.com.ar/).
 
 ## Capacidades y Funcionalidades
 
@@ -29,6 +29,10 @@ Woo-iFactura es un plugin para WooCommerce que permite emitir factura electróni
     * Punto de Venta: Número de punto de venta de iFactura que vas a usar para operar
     * Condición Impositiva: Tu condición impositiva para poder facturar
     * Activar "auto-envío": Activalo para enviar automáticamente los comprobantes emitidos (opcional)
+    * Facturar automáticamente: Permite que cuando orden cambia su estado se genere la factura directamente sin tener que realizar ninguna acción extra (desactivado por defecto).
+    * Ignorar envíos: Permite que los elementos de una orden relacionados al envio de la misma sean ignorados al momento de generar una factura (desactivado por defecto).
+    * Agrupar elementos de la venta: Permite facturar directamente el total de la orden en un solo item de la factura. Toma automáticamente el valor de IVA de todos los productos. Esta funcionalidad no es compatible con ordenes que posean más de un IVA diferente (desactivado por defecto).
+    * Productos con IVA 0% o sin IVA: Es un parámetro exclusivo para los Responsables Inscriptos que permite procesar los elementos que no contengan IVA a un tipo especial de IVA que puede ser "Exento" o "No gravado".
 
 ## Uso
 
@@ -48,13 +52,20 @@ Si activaste "auto-envío", el envío de la factura al cliente no requiere ningu
 * Agrega un campo "DNI" en el proceso de checkout, por lo que si ya habías hecho ajustes para obtener el documento del cliente, deberás quitarlo para evitar redundancias.
 * El campo "DNI" se usa en referencia a cualquier documento (DNI, CUIT o CUIL) y se mantiene el mismo nombre por cuestiones de retrocompatibilidad del plugin.
 
+## Consideraciones de IVA
+
+En caso de facturar productos con IVA (21% y otros) es necesario tener configurado correctamente el apartado de impuestos en Woocommerce:
+* Configurar Woocommerce para que procese los valores de los productos como si no tuvieran los impuestos cargados.
+* En la sección "Tarifas Estándar" hay que configurar el impuesto IVA al porcentaje adecuado para los productos.
+* En caso de querer facturar elementos cuyo IVA sea de tipo "Exento" o "No gravado" existe una configuración en el módulo para interpretar el IVA 0% como esa condición.
+
 ## Ventas previas a la instalación del plugin
 
 En caso de querer facturar ventas previas a la instalación de este plugin, deberás especificar los datos faltantes de facturación del cliente.
 
 Para ello, en la vista de la orden presionás en el lápiz que está al lado de la sección "Facturación" donde figuran los datos del cliente.
 
-Además del paso anterior, deberás los 3 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: "DNI" y "condicionimpositiva".
+Además del paso anterior, deberás los 2 campos personalizados. Esto se encuentra abajo de la sección de artículos de la orden. Los mismos son: "DNI" y "condicionimpositiva".
 
 ## Requisitos
 

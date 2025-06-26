@@ -1,10 +1,16 @@
 <?php
+require_once(__DIR__ . "/../ifactura/ConectoriFactura.class.php");
+require_once(__DIR__ . "/../ifactura/ConfiguracioniFactura.class.php");
+require_once(__DIR__ . "/../ifactura/WCOrdenExtendida.class.php");
 
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+use Automattic\WooCommerce\Blocks\Package;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
 /**
  * The admin-specific functionality of the plugin.
  *
  * @link       https://www.ifactura.com.ar
- * @since      0.1
+ * @since      2.0
  *
  * @package    woo-ifactura
  * @subpackage woo-ifactura/admin
@@ -33,7 +39,7 @@ class Woo_iFactura_Admin
     /**
      * The ID of this plugin.
      *
-     * @since    0.0.1
+     * @since    2.0
      * @access   private
      * @var      string    $plugin_name    The ID of this plugin.
      */
@@ -42,7 +48,7 @@ class Woo_iFactura_Admin
     /**
      * The version of this plugin.
      *
-     * @since    0.0.1
+     * @since    2.0
      * @access   private
      * @var      string    $version    The current version of this plugin.
      */
@@ -51,11 +57,10 @@ class Woo_iFactura_Admin
     /**
      * Initialize the class and set its properties.
      *
-     * @since    0.0.1
+     * @since    2.0
      * @param      string    $plugin_name       The name of this plugin.
      * @param      string    $version    The version of this plugin.
      */
-    private $soap_url;
     
     public function __construct($plugin_name, $version)
     {
@@ -66,7 +71,7 @@ class Woo_iFactura_Admin
     /**
      * Register the stylesheets for the admin area.
      *
-     * @since    0.0.1
+     * @since    2.0
      */
     public function enqueue_styles()
     {
@@ -75,7 +80,7 @@ class Woo_iFactura_Admin
     /**
      * Register the JavaScript for the admin area.
      *
-     * @since    0.0.1
+     * @since    2.0
      */
     public function enqueue_scripts()
     {
@@ -112,15 +117,15 @@ class Woo_iFactura_Admin
     }
     
     /**
-    * Show warnings if taxes are ON.
+    * Mostrar advertencia si se es Responsable inscrpto pero estan desactivados los impuestos
     *
     **/
     public function woo_warning()
     {
         global $current_screen;
-         
+        $configuracioniFactura = new ConfiguracioniFactura();
         if ($current_screen->base == 'woocommerce_page_wc-settings') {
-            if ('no'==get_option('woocommerce_calc_taxes') && get_option('wc_settings_tab_woo_ifactura_impositive_treatment') == 1) {
+            if ('no'==get_option('woocommerce_calc_taxes') && $configuracioniFactura->condicionImpositiva == 1) {
                 echo '<div class="notice notice-error"><p>Atención: Tu WooCommerce no tiene activado y configurado correctamente los impuestos para trabajar con IVA.</p></div>';
             }
         }
@@ -168,6 +173,7 @@ class Woo_iFactura_Admin
                 <select name="billing_condicionimpositiva_ifactura" id="reg_billing_condicionimpositiva_ifactura">
                     <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Responsable Inscripto</option>
                     <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Exento</option>
+                    <option value="3" <?php $elegido == 3 ? "selected" : "" ?>>Monotributo</option>
                     <option value="4" <?php $elegido == 4 ? "selected" : "" ?>>Consumidor Final</option>
                 </select>				
 			</p>
@@ -243,6 +249,7 @@ class Woo_iFactura_Admin
                 <select name="billing_condicionimpositiva_ifactura" id="ma_billing_condicionimpositiva_ifactura">
                     <option value="1" <?php $elegido == 1 ? "selected" : "" ?>>Responsable Inscripto</option>
                     <option value="2" <?php $elegido == 2 ? "selected" : "" ?>>Exento</option>
+                    <option value="3" <?php $elegido == 3 ? "selected" : "" ?>>Monotributo</option>
                     <option value="4" <?php $elegido == 4 ? "selected" : "" ?>>Consumidor Final</option>
                 </select>				
 			</p>
@@ -279,13 +286,16 @@ class Woo_iFactura_Admin
     * Add DNI and Condición Impositiva field to checkout form
     *
     */
-    public static function woo_ifactura_dni_checkout_field($checkout_fields)
+    public function woo_ifactura_dni_checkout_field($checkout_fields)
     {
-        $user_meta  =  get_user_meta(get_current_user_id());
-         
-        $billing_dni =  $user_meta['billing_dni_ifactura']['0'];
-        $condicionimpositiva = $user_meta['billing_condicionimpositiva_ifactura']['0'];
-
+        $user_meta  =  get_user_meta(get_current_user_id()); 
+        $billing_dni = "";
+        $condicionimpositiva = 4;
+        if (!empty($user_meta))
+        {
+            $billing_dni =  $user_meta['billing_dni_ifactura']['0'];
+            $condicionimpositiva = $user_meta['billing_condicionimpositiva_ifactura']['0'];
+        }   
         $checkout_fields['billing']['billing_dni_ifactura']  =  array(
             'label'          => __('CUIT/CUIL/DNI', 'woo-ifactura'),
             'placeholder'    => __('enter your dni', 'woo-ifactura'),
@@ -296,6 +306,7 @@ class Woo_iFactura_Admin
         );
         $opciones_condicion = array(
             "4" => "Consumidor Final",
+            "3" => "Monotributo",
             '1' => "Responsable Inscripto",
             "2" => "Exento"       
         );
@@ -305,11 +316,69 @@ class Woo_iFactura_Admin
             'clear'          => false,
             'type'           => 'select',
             'options'       => $opciones_condicion,
+            'default'        => $condicionimpositiva,
             'class'          => array('form-row-wide'),
         );
         return $checkout_fields;
     }
-    
+    /**
+     * @see https://developer.woocommerce.com/docs/block-development/cart-and-checkout-blocks/additional-checkout-fields/
+     */
+    public function woo_ifactura_dni_checkout_field_blocks()
+    {
+        //revisar si la clase checkout existe. Para compatibilidad con versiones de woocommerce anteriores a 8
+        if (!class_exists(CheckoutFields::class)) {
+            return;
+        }
+        $customer = wc()->customer; // Or new WC_Customer( $id )       
+        $checkout_fields = Package::container()->get(CheckoutFields::class);
+        $billing_dni = "";
+        $condicionimpositiva = "";
+        if (!empty($customer)) {
+            $billing_dni = $checkout_fields->get_field_from_object(WCOrdenExtendida::campoDNICodeBlock, $customer, 'contact');
+            $condicionimpositiva = $checkout_fields->get_field_from_object(WCOrdenExtendida::campoCondicionImpositivaCodeBlock, $customer, 'contact');
+        }
+        $campoDNI = array(
+            'id'            => 'wooifactura/dni',
+            'label'         => __('CUIT/CUIL/DNI', 'woo-ifactura'),
+            'optionalLabel' => __('CUIT/CUIL/DNI', 'woo-ifactura'),
+            'location'      => 'contact',
+            'type'          => 'text',
+            'default'       => $billing_dni,
+            'required'      => true,
+            'attributes'    => array(
+                'autocomplete'     => 'dni',
+                'aria-describedby' => 'some-element',
+                'aria-label'       => 'custom aria label',
+                'title'            => __('CUIT/CUIL/DNI', 'woo-ifactura'),
+                'data-custom'      => 'custom data',
+            ),
+        );
+        $campoCondicionImpositiva = array(
+            'id'            => 'wooifactura/tax-treatment',
+            'label'         => __('Tax Treatment', 'woo-ifactura'),
+            'optionalLabel' => __('Tax Treatment', 'woo-ifactura'),
+            'location'      => 'contact',
+            'required'      => true,
+            'type'          => 'select',
+            'options'       => array(
+               array("value" => "1", "label" => "Responsable Inscripto"),
+               array("value" => "2", "label" => "Exento"),  
+                array("value" => "3", "label" => "Monotributo"),
+                array("value" => "4", "label" => "Consumidor Final")
+),
+            'default'       => $condicionimpositiva,
+            'attributes'    => array(
+                'autocomplete'     => 'tax-treatment',
+                'aria-describedby' => 'some-element',
+                'aria-label'       => 'custom aria label',
+                'title'            => __('Tax Treatment', 'woo-ifactura'),
+                'data-custom'      => 'custom data',
+            ),
+        );
+        woocommerce_register_additional_checkout_field($campoDNI);
+        woocommerce_register_additional_checkout_field($campoCondicionImpositiva);
+    }
     /**
     * Validates DNI field in checkout proccess
     *
@@ -323,108 +392,163 @@ class Woo_iFactura_Admin
             wc_add_notice(__('Tax Treatment is invalid.', 'woo-ifactura'), 'error');
         }
     }
-    
     /**
     * Saves user DNI field to order
     *
     */
     public static function woo_ifactura_update_order_meta($order_id)
     {
+        $ordenExtendida = new WCOrdenExtendida($order_id);
         if (! empty($_POST['billing_dni_ifactura']) && preg_match('/^[0-9]*$/', $_POST['billing_dni_ifactura'])) {
-            update_post_meta($order_id, 'DNI', sanitize_text_field($_POST['billing_dni_ifactura']));
+            $ordenExtendida->guardarDNI(sanitize_text_field($_POST['billing_dni_ifactura']));
         }
         if (! empty($_POST['billing_condicionimpositiva_ifactura'])) {
-            update_post_meta($order_id, 'condicionimpositiva', sanitize_text_field($_POST['billing_condicionimpositiva_ifactura']));
+            $ordenExtendida->guardarCondicionImpositivaCliente(sanitize_text_field($_POST['billing_condicionimpositiva_ifactura']));
         }
     }
-    
-    /*
+    /**
     * Shows customer DNI in order page
     *
     */
     public function woo_ifactura_display_admin_order_meta($order)
     {
-        echo '<p><strong>'.__('DNI',"woo-ifactura").':</strong> ' . get_post_meta($this->get_order_id($order), 'DNI', true) . '</p>
-            <p><strong>'.__('Tax Treatment',"woo-ifactura").':</strong> ' . $this->woo_ifactura_gettipocondicionimpositiva(get_post_meta($this->get_order_id($order), 'condicionimpositiva', true)) . '</p>
-            <p><strong>'.__('People Registry Type',"woo-ifactura").':</strong> ' . $this->woo_ifactura_gettipopersona(get_post_meta($this->get_order_id($order), 'DNI', true)) . '</p>';
+        $conectoriFactura = new ConectoriFactura();
+        $order_id = $this->get_order_id($order);
+        $ordenExtendida = new WCOrdenExtendida($order_id);
+        if ($ordenExtendida->modoBlocksWoocommerce) {
+            echo '<p><strong>' . __('People Registry Type', "woo-ifactura") . ':</strong> ' . $conectoriFactura->woo_ifactura_gettipopersona($ordenExtendida->documentoIdentificador) . '</p>
+                <p><strong>' . __('Invoice Type', "woo-ifactura") . ':</strong> ' . $conectoriFactura->getNombreTipoComprobanteOrden($order_id) . ' </p>';
+        }
+        else
+        {
+            echo '<p><strong>'.__('DNI',"woo-ifactura").':</strong> ' . $ordenExtendida->documentoIdentificador . '</p>
+                <p><strong>'.__('Tax Treatment',"woo-ifactura").':</strong> ' . $conectoriFactura->woo_ifactura_gettipocondicionimpositiva($ordenExtendida->condicionImpositiva) . '</p>
+                <p><strong>'.__('People Registry Type',"woo-ifactura").':</strong> ' . $conectoriFactura->woo_ifactura_gettipopersona($ordenExtendida->documentoIdentificador) . '</p>
+                <p><strong>'.__('Invoice Type',"woo-ifactura").':</strong> ' . $conectoriFactura->getNombreTipoComprobanteOrden($order_id) .' </p>';
+        }
     }    
-    /*
+    /**
     * Shows customer DNI in email
     *
     *
     */    
     public static function woo_ifactura_display_dni_in_email_fields($keys)
     {
-        $keys['DNI'] = 'DNI';        
+        $keys["CUIT/CUIL/DNI"] = WCOrdenExtendida::campoDNIField;        
         return $keys;
     }
     public static function woo_ifactura_display_condicionimpositiva_in_email_fields($keys)
     {
-        $keys['condicionimpositiva'] = 'condicionimpositiva';        
+        $keys["Condición Impositiva"] = WCOrdenExtendida::campoCondicionImpositivaField;       
         return $keys;
     }
-    /*
+    /**
     * Add iFactura metabox to the order screen
     *
     */
     public function woo_ifactura_add_metaboxes()
     {
-        add_meta_box('ifactura_metabox', __('ifactura', 'woo-ifactura'), array( $this, 'woo_ifactura_order_buttons' ), 'shop_order', 'side', 'core');
+        // ver en que screen se está
+        // si se está usando Custom Orders Table, usar el screen_id de la tabla, sino
+        $screen = wc_get_container()->get(CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled()
+            ? wc_get_page_screen_id('shop-order')
+            : 'shop_order';
+        // Agregar el metabox de iFactura
+        add_meta_box('ifactura_metabox', __('ifactura', 'woo-ifactura'), array( $this, 'woo_ifactura_order_buttons' ), $screen, 'side', 'high');
     }
     
-    /*
+    /**
     * Add iFactura buttons to order metabox
     *
     */
-    public function woo_ifactura_order_buttons()
+    public function woo_ifactura_order_buttons($post_or_order_object)
     {
-        global $post;
-        
-        $the_order = new WC_Order($post->ID);
-        
-        
-        if (! $the_order->has_status(array( 'cancelled' )) && ($the_order->has_status(array( 'processing' )) || $the_order->has_status(array( 'completed' )))) {
-            $invoice_id = get_post_meta($this->get_order_id($the_order), '_invoice_id', true);
-            
-            $estado_ifactura = get_post_meta($this->get_order_id($the_order), '_estado_ifactura', true);
-            
-        
-            if ($invoice_id=='') {
+        // PARA CHECKEAR SI ES UN PEDIDO O UN POST
+        $order = ($post_or_order_object instanceof WP_Post) ? wc_get_order($post_or_order_object->ID) : $post_or_order_object;
+        if (! $order) {
+            return;        }
+        if (! $order->has_status(array( 'cancelled' )) && ($order->has_status(array( 'processing' )) || $order->has_status(array( 'completed' ) ) || $order->has_status(array( 'pending' ) ))) {
+            $ordenExtendida = new WCOrdenExtendida($this->get_order_id($order));
+            if ($ordenExtendida->invoice_id=='') {
                 do_action('before_invoice_button', $args=array()); ?>
 				<p>
-					<a class="button fy-invoice-button"  title="<?php _e('create invoice', 'woo-ifactura') ?>"><?php __('Invoice', 'woo-ifactura') ?></a>
+					<a class="button fy-invoice-button"  title="<?php _e('create invoice', 'woo-ifactura') ?>"></a>
 				</p>
 				<?php
             } else {
                 ?>
 				<p>
-				<?php
-                
-                switch ($estado_ifactura) {                    
+				<?php                
+                switch ($ordenExtendida->estado_ifactura) {                    
                     case 1:                    
                         /* 1: generación en progreso */
                         ?>						
-							<a class="button fy-awaiting-button"  title="<?php _e('awaiting invoice', 'woo-ifactura') ?>"><?php __('awaiting invoice', 'woo-ifactura') ?></a>						
+							<a class="button fy-awaiting-button"  title="<?php _e('awaiting invoice', 'woo-ifactura') ?>"></a> <?php _e('awaiting invoice', 'woo-ifactura') ?>
 						<?php                        
                         break;                    
                     case 2:                        
                         /* 2: generada correctamente */
                         ?>						
-							<a class="button fy-view-invoice-button"  title="<?php _e('view invoice', 'woo-ifactura') ?>"><?php __('view invoice', 'woo-ifactura') ?></a>							
+							<a class="button fy-view-invoice-button"  title="<?php _e('view invoice', 'woo-ifactura') ?>"></a> <?php _e('view invoice', 'woo-ifactura') ?>
 						<?php                        
                         break;                    
                     default:                    
                         /* 3: error.  */                        
                         ?>						
-							<a class="button fy-invoice-button"  title="<?php _e('create invoice', 'woo-ifactura') ?>"><?php __('Invoice', 'woo-ifactura') ?></a>						
+							<a class="button fy-invoice-button"  title="<?php _e('create invoice', 'woo-ifactura') ?>"></a> <?php _e('Invoice', 'woo-ifactura') ?>
 						<?php                        
                         break;               
                 } ?>
 				</p>
 				<?php
+                if ($ordenExtendida->cancelacionInvoice_id == "")
+                {
+                    ?>
+                        <p>
+                            <a class="button fy-cancelinvoice-button"  title="<?php _e('cancel invoice', 'woo-ifactura') ?>"></a> <?php _e('cancel invoice', 'woo-ifactura') ?>
+                        </p>
+                    <?php
+                }
+                else
+                {
+                     ?>
+                        <p>                            
+                        <?php
+                        switch ($ordenExtendida->estado_cancelacion_ifactura) {
+                            case 1:
+                                /* 1: generación en progreso */
+                                ?>						
+                                    <a class="button fy-awaiting-button"  title="<?php _e('awaiting invoice', 'woo-ifactura') ?>"><?php _e('awaiting invoice', 'woo-ifactura') ?></a>						
+                                <?php
+                                break;
+                            case 2:
+                                /* 2: generada correctamente */
+                                ?>						
+                                    <a class="button fy-view-cancelinvoice-button"  title="<?php _e('view invoice cancel', 'woo-ifactura') ?>"><?php _e('view invoice cancel', 'woo-ifactura') ?></a>								
+                                <?php
+                                break;
+                            default:
+                                /* 3: error.  */
+                                ?>						
+                                    <a class="button fy-cancelinvoice-button"  title="<?php _e('cancel invoice', 'woo-ifactura') ?>"><?php _e('cancel invoice', 'woo-ifactura') ?></a>						
+                                <?php
+                                break;
+                        } ?>
+                         Nota de crédito</p>
+                    <?php
+                }
+                $configuracioniFactura = new ConfiguracioniFactura();
+                if ($configuracioniFactura->modoDebug)
+                {
+                    ?>
+                        <p>
+                            <a class="button fy-deleteinvoice-button"  title="<?php _e('delete invoice', 'woo-ifactura') ?>"></a> <?php _e('delete invoice', 'woo-ifactura') ?>
+                        </p>
+                    <?php
+                }
             }
         } else {
-            echo 'Podrás facturar cuando el pedido esté en estado "Procesando".';
+            echo 'Podrás facturar cuando el pedido esté en estado "Procesando" o "Pendiente de pago".';
         }
     }    
     /**
@@ -486,6 +610,43 @@ class Woo_iFactura_Admin
                 'desc' => __('Autosend desc', 'woo-ifactura'),
                 'id'   => 'wc_settings_tab_woo_ifactura_autoenvio'
             ),
+            'facturarautomatico' => array(
+                'name' => "Facturar automáticamente",
+                'type' => 'select',
+                'desc' => 'Generar automáticamente las facturas cuando las órdenes pasan a un estado definido.',
+                'default' => '1',
+                'id'   => 'wc_settings_tab_woo_ifactura_facturarautomatico',
+                'options' => array(
+                      '1' => "No",
+                      '2' => "Cuando las órdenes pasen a estado 'Pendiente de Pago'",
+                      '3' => "Cuando las órdenes pasen a estado 'Procesando'",
+                      '4' => "Cuando las órdenes pasen a estado 'En Espera'",
+                      '5' => "Cuando las órdenes pasen a estado 'Completado'"
+                 )
+            ),
+            'ignorarshipping' => array(
+                'name' => "Ignorar envios",
+                'type' => 'checkbox',
+                'desc' => "No facturar los items de una orden que son de tipo envío (shipping).",
+                'id'   => 'wc_settings_tab_woo_ifactura_ignorarenvio'
+            ),
+            'agruparventa' => array(
+                'name' => "Agrupar elementos de la venta",
+                'type' => 'checkbox',
+                'desc' => "Agrupar todos los elementos de la venta en un solo item. Se tomará el porcentaje de IVA detectado de los elementos. En caso de más un porcentaje de IVA no se podrá agrupar. <strong>El uso de plugins de descuentos puede generar conflictos con los impuestos si se combina esta opción con la de Ignorar Envios.</strong>",
+                 'id'   => 'wc_settings_tab_woo_ifactura_agruparventa'
+            ),
+            'considerarIVA0' => array(
+                'name' => "Productos con IVA 0% o sin IVA",
+                'type' => 'select',
+                'desc' => "<strong>¡Solo Responsables Inscriptos!</strong> Con que tipo de Alicuota de IVA serán procesados los elementos sin IVA o 0%. <strong>Importante configurar si los productos sin IVA deben ser considerados Exentos o No Gravados</strong>",
+                'id'   => 'wc_settings_tab_woo_ifactura_considerariva0',
+                'options' => array(
+                    '1' => "IVA 0%",
+                    '2' => "Exento",
+                    '3' => "No gravado"
+                )
+            ),
             'sectionend' => array(
                  'type' => 'sectionend',
                  'id' => 'wc_settings_tab_woo_ifactura_section_title'
@@ -508,19 +669,20 @@ class Woo_iFactura_Admin
     */    
     public function woo_ifactura_order_actions($actions, $the_order)
     {
-        if (!$the_order->has_status(array( 'cancelled' )) && ($the_order->has_status(array( 'processing' )) || $the_order->has_status(array( 'completed' )))) {
-            $invoice_id = get_post_meta($this->get_order_id($the_order), '_invoice_id', true);            
-            $estado_ifactura = get_post_meta($this->get_order_id($the_order), '_estado_ifactura', true);        
-            if ($invoice_id=='') {
-                if (!is_plugin_active('woo-ifactura-exportacion/woo-ifactura-exportacion.php')):                
-                    $actions['invoice'] = array(                        
-                        'url'       => '#',                        
-                        'name'      => __('Invoice', 'woo-ifactura'),                        
-                        'action'    => "fy-invoice-button",                    
-                    );                
-                endif;
+        $order = $the_order;
+        if (!$order->has_status(array( 'cancelled' )) && ($order->has_status(array( 'processing' )) || $order->has_status(array( 'completed' )))) {
+            $order_id = $this->get_order_id($order);
+            $ordenExtendida = new WCOrdenExtendida($order_id);       
+            if ($ordenExtendida->invoice_id=='') {
+                if (!is_plugin_active('woo-ifactura-exportacion/woo-ifactura-exportacion.php')) {
+                    $actions['invoice'] = array(
+                        'url'       => '#',
+                        'name'      => __('Invoice', 'woo-ifactura'),
+                        'action'    => "fy-invoice-button",
+                    );
+                }
             } else {
-                switch ($estado_ifactura) {                    
+                switch ($ordenExtendida->estado_ifactura) {                    
                     case 1:                    
                         /* 1: procesando invoice */
                         $actions['awaiting_invoice'] = array(                    
@@ -541,444 +703,130 @@ class Woo_iFactura_Admin
                         /* 3: error */                      
                         break;                
                 }
+                if ($ordenExtendida->cancelacionInvoice_id =='')
+                {
+                     $actions['invoice'] = array(
+                        'url'       => '#',
+                        'name'      => __('cancel invoice', 'woo-ifactura'),
+                        'action'    => "fy-cancelinvoice-button",
+                    );
+                }
+                else
+                {
+                    switch ($ordenExtendida->estado_cancelacion_ifactura) {
+                        case 1:
+                            /* 1: procesando invoice */
+                            $actions['awaiting_invoice'] = array(
+                                    'url'       => '',
+                                    'name'      => __('awaiting invoice', 'woo-ifactura'),
+                                    'action'    => "fy-awaiting-button",
+                            );
+                            break;
+                        case 2:
+                            /* 2: invoice lista */
+                            $actions['view_invoice'] = array(
+                                'url'       => '#',
+                                'name'      => __('view invoice cancel', 'woo-ifactura'),
+                                'action'    => "fy-view-cancelinvoice-button",
+                            );
+                            break;
+                        default:
+                            /* 3: error */
+                            break;
+                    }
+                }
             }
         }        
-        return $actions;    }
-    
-    public function woo_item_price($impositive_treatment, $price, $iva='')
-    {
-        if ($iva=='') {
-            $iva=21;
-        }        
-        $divisor = round((floatval($iva/100)) + 1,2);        
-        if (in_array($impositive_treatment, array(3,2,5))) {
-            $price = $price/$divisor;
-        }        
-        return $price;
+        return $actions;    
     }    
+    /**
+     * Método para generar un comprobante automáticamente fruto de un proceso cron o cambio de estado
+     * Los pasos realizados por este método son registrados como admin notes de la orden
+     * @param Integer $order_id ID de la orden
+     */
+    public function woo_ifactura_generarComprobanteAutomatico($order_id)
+    {
+        $order = wc_get_order($order_id);
+        $estado_orden = $order->get_status();
+        $estadoEventoSeleccionado = "";
+        $configuracioniFactura = new ConfiguracioniFactura();
+        $facturaAutomatico = $configuracioniFactura->facturarAutomatico;
+        //RECUPERAR EL ESTADO DE LA FACTURA
+        $ordenExtendida = new WCOrdenExtendida($order_id);
+        $estado_ifactura = $ordenExtendida->estado_ifactura;
+        //SOLO DEBUG
+        if ($configuracioniFactura->modoDebug)
+        {
+            $nota = __("DEBUG estado de facturación: " . var_export($estado_ifactura,1));
+            $ordenExtendida->AgregarNota($nota);
+        }       
+        //ESTADO 2 SIGNIFICA QUE YA SE GENERO UN COMPROBANTE Y 1 SIGNIFICA QUE SE ESTA EMITIENDO
+        if ($facturaAutomatico === true && $estado_ifactura < 1)
+        {
+            $estadoEventoSeleccionado = $configuracioniFactura->eventoParaFacturar;
+            if ($estadoEventoSeleccionado == $estado_orden) //CHECK SI COINCIDE EL NUEVO ESTADO DE LA ORDEN CON EL SELECCIONADO
+            {
+                $orden = wc_get_order($order_id);
+                $nota = __("Generando comprobante en iFactura");
+                $orden->add_order_note($nota);
+                $iFactura = new ConectoriFactura();
+                $respuesta = $iFactura->woo_ifactura_procesarInvoice($order_id);
+                if ($respuesta->Exito == true) {
+                    $nota = __("Creación de factura correcta.");
+                    $orden->add_order_note($nota);
+                } else {
+                    if ($configuracioniFactura->modoDebug)
+                    {
+                        $nota = __("Fallo la creación de la factura: " . var_export($respuesta, 1));
+                    }
+                    else
+                    {
+                        $nota = __("Fallo la creación de la factura: " . $respuesta->Mensaje);
+                    }                    
+                    $orden->add_order_note($nota);
+                }
+            }
+            else
+            {
+                //SOLO DEBUG
+                if ($configuracioniFactura->modoDebug) {
+                    $nota = __("DEBUG la creación de la factura: Estado seleccionado" . var_export($estadoEventoSeleccionado, 1) . " Estado en orden: " . var_export($estado_orden, 1));
+                    $ordenExtendida->AgregarNota($nota);
+                }          
+            }
+        }
+    }
     /**
     * Procesar la petición AJAX para generar el comprobante.
     *
     **/    
     public function woo_ifactura_invoice()
-    {
-        //error_reporting(E_ALL);
-        //ini_set("display_errors", 1);
-        global $woocommerce;           
-        $order_id = intval($_POST["order"]);        
-        $order = wc_get_order($order_id);        
-        $coupons = $order->get_used_coupons();        
-        if ($woocommerce->version >= "3.0") {
-            $discount = $order->discount_total;
-        } else {
-            $discount = $order->get_total_discount();
-        }        
-        $shipping_data = $order->get_items('shipping');
-        $shipping_methods = array();        
-        $total = 0;        
-        $precio_sin_iva = 0;        
-        //Condición impositiva
-        $it = get_option('wc_settings_tab_woo_ifactura_impositive_treatment');        
-        if (!$it) {
-            //die("Sin Condición Impositiva");
-            die(json_encode(array("Exito" => false, "Mensaje" => "Sin condición impositiva")));
-        }        
-        $option_taxes = get_option('woocommerce_calc_taxes');              
-        /** Shipping **/        
-        if (is_array($shipping_data)):        
-            foreach ($shipping_data as $k=>$sm) {                
-                /** TAXES shipping **/                
-                //if( false !== get_option('wc_settings_tab_woo_ifactura_IVA') ){
-                $iva_total = 0;
-                if ($it == 1) //RESPONSABLE INSCRIPTO
-                {
-                    if ($sm['total_tax']==0 && $option_taxes == 'no') {
-                        $iva = 21;
-                        if ($woocommerce->version >= "3.0") {
-                            $precio = $sm->get_total();
-                        } else {
-                            $precio  = $sm['item_meta']['cost'][0];
-                        }
-                        $iva_total = round((floatval($iva) * floatval($precio)) / (100 + floatval($iva)), 2);
-                        $total_linea = round($precio - $iva_total, 2);
-                    } else {
-                        if ($sm['total_tax']==0) {
-                            $iva = 0;
-                        } else {
-                            $iva = (($sm['total_tax']*100)/$sm['total']);
-                        }                  
-                        
-                        if ($woocommerce->version >= "3.0") {
-                            $precio = $sm->get_total();
-                        } else {
-                            $precio  = $sm['item_meta']['cost'][0];
-                        }
-                        $iva_total = round($item_meta['total_tax'], 2);
-                        $total_linea = round(floatval($sm['total']) + $iva_total, 2);
-                    }
-                }
-                else
-                {
-                    $iva = 0;
-                    if ($woocommerce->version >= "3.0") {
-                        $precio = $sm->get_total();
-                    } else {
-                        $precio  = $sm['item_meta']['cost'][0];
-                    }
-                    $total_linea = $precio;
-                }
-                if ($woocommerce->version >= "3.0") {
-                    $shipping_name = $sm->get_name();
-                } else {
-                    $shipping_name = $sm['name'];
-                }                
-                if (!empty(floatval($precio)))
-                {
-                    $porcentaje_iva = $this->woo_ifactura_alicuotaiva($iva);
-                    array_push(
-                        $shipping_methods,                
-                        array(                    
-                            'Bonificacion' => 0,                        
-                            'Cantidad' => 1,                        
-                            'Codigo' => '',                        
-                            'Descripcion' => $shipping_name,                         
-                            'AlicuotaIVA' => $porcentaje_iva,                    
-                            'IVA' => round($iva_total ,2),                      
-                            'ValorUnitario' => round(floatval($precio),2),
-                            'Total' => round($total_linea,2)
-                        )                    
-                    );
-                    $total+=$precio;   
-                }
-            }            
-               
-        endif;        
-        $fees = $order->get_fees();        
-        $order_fees = array();    
-        if (is_array($fees)) {
-            foreach ($fees as $k=>$v) {
-                $precio = $v->get_total();
-                if (!empty(floatval($precio)))
-                {
-                    $porcentaje_iva = $this->woo_ifactura_alicuotaiva(0);
-                    $iva_total = 0;
-                    array_push(
-                        $order_fees,                
-                        array(                    
-                            'Bonificacion' => 0,                        
-                            'Cantidad' => 1,                        
-                            'Codigo' => '',                        
-                            'Descripcion' => $v->get_name(),                        
-                            'AlicuotaIVA' => $porcentaje_iva,
-                            'IVA' => $iva_total,                           
-                            'ValorUnitario' => round(floatval($precio),2),
-                            'Total' => round($precio - $iva_total,2)                          
-                        )                    
-                    );
-                    $total+=$precio;
-                }
-            }
-        }        
-        //DATOS DEL CLIENTE
-        $order_meta = get_post_meta($order_id);        
-        $items = $order->get_items();        
-        $billing_currency = $order_meta["_order_currency"][0];        
-        $billing_first_name = $order_meta["_billing_first_name"][0];        
-        $billing_last_name = $order_meta["_billing_last_name"][0];        
-        $billing_email = $order_meta["_billing_email"][0];        
-        $billing_postcode = $order_meta["_billing_postcode"][0];        
-        $payment_method = $order_meta["_payment_method"][0];        
-        $billing_address_1 = $order_meta["_billing_address_1"][0];        
-        $billing_address_2 = $order_meta["_billing_address_2"][0];        
-        $billing_city = $order_meta["_billing_city"][0];        
-        $billing_phone = $order_meta["_billing_phone"][0];        
-        $billing_company = $order_meta["_billing_company"][0];    
-        
-        if (class_exists("WC_Countries")) {            
-            /* WC > 2.3.0 */            
-            $countries = new WC_Countries();            
-            $states = $countries->get_states("AR");            
-            $billing_state = $states[$order_meta["_billing_state"][0]]; // SOLO ARGENTINA
-        } else {
-            global $states;            
-            $billing_state = $states["AR"][$order_meta["_billing_state"][0]]; // SOLO ARGENTINA
-        }  
-        $customer_user = $order_meta["_customer_user"][0];        
-        /*Patch for DOS61*/      
-        if (isset($order_meta['_billing_street'])) {
-            $billing_address_1 = $order_meta['_billing_street'][0].' '.$order_meta['_billing_number'][0];
-            $billing_address_2 = $order_meta['_billing_floor'][0].' '.$order_meta['_billing_apartment'][0];
-        }       
-        
-        $time = new DateTime;        
-        $today_atom = $time->format(DateTime::ATOM);        
-        /** Products **/        
-        //Bienes
-        $Bienes = array();        
-        foreach ($items as $k=>$item) {
-            $product_id = $item['product_id'];            
-            $item_quantity = $order->get_item_meta($k, '_qty', true);            
-            $item_total = $order->get_item_meta($k, '_line_total', true);           
-            
-            if ($item['variation_id']>0) {
-                $product_id = $item['variation_id'];
-            }
-            
-            $product = wc_get_product($product_id);
-            $price = round(floatval($item_total/$item_quantity),2);     //UNITARIO CON IVA       
-            $sku = $product->get_sku();            
-            if ($sku == '') {
-                $sku = $product_id;
-            }            
-            if (!empty(floatval($item_total)))
-            {
-                /* TAXES para productos */
-                $iva_total = 0;
-                if ($it == 1) //RESPONSABLE INSCRIPTO
-                {
-                    $item_meta = $item->get_data();
-                    if ($item_meta['total_tax']==0 && $option_taxes == 'no') {
-                        //NO TIENE LO IMPUESTOS CONFIGURADOS Y LO CONSIDERA QUE ESTAN INCLUIDOS EN EL VALOR FINAL
-                        $iva = 21;
-                        $iva_total = round((floatval($iva) * floatval($item_total)) / (100 + floatval($iva)), 2);
-                        $total_linea = round($item_total - $iva_total,2);
-                    } else {
-                        //LO TIENE POR SEPARADO DADO QUE TIENE CONFIGURADOS LOS IMPUESTOS
-                        $tax = new WC_Tax();                
-                        $taxes = array_shift($tax->get_rates($item_meta['tax_class']));                        
-                        if ($item_meta['total_tax']==0) {
-                            $iva = 0;
-                        } else {
-                            $iva = $taxes['rate'];
-                        }                      
-                        $iva_total = round($item_meta['total_tax'],2);
-                        $total_linea = round($item_total,2);
-                    }
-                }
-                else
-                {
-                    //SIN IMPUESTOS, MONOTRIBUTO O EXENTO
-                    $iva_total = 0;
-                    $iva = 0;
-                    $total_linea = round($item_total - $iva_total, 2);
-                }       
-                $porcentaje_iva = $this->woo_ifactura_alicuotaiva($iva);
-                array_push($Bienes, array(            
-                    'Bonificacion' => 0,                
-                    'Cantidad' => $item_quantity,                
-                    'Codigo' => $sku,                
-                    'Descripcion' => $item['name'],
-                    'AlicuotaIVA' => $porcentaje_iva,                    
-                    'IVA' => round($iva_total,2),                 
-                    'ValorUnitario' => round(floatval($price),2),
-                    'Total' => $total_linea       
-                ));            
-                $total+= $item['qty'] * $item_total;
-            }
-        }
-        //AGREGAR SHIPPING Y FEES
-        if (is_array($shipping_methods) && count($shipping_methods)>0) {
-            foreach ($shipping_methods as $k=>$v) {
-                array_push($Bienes, $v);
-            }
-        }
-        if (count($order_fees)>0) {
-            foreach ($order_fees as $k=>$v) {
-                array_push($Bienes, $v);
-            }
-        }
-        
-        
-        $sandbox = get_option('wc_settings_tab_woo_ifactura_testmode');        
-        if (!$sandbox || $sandbox == 'no') {
-            $url = 'https://app.ifactura.com.ar/API/EmitirFactura';
-        } else {
-            $url = 'https://demo.ifactura.com.ar/API/EmitirFactura';
-        }
-        $razonsoc = $billing_first_name .  " " . $billing_last_name;
-        if (!empty($billing_company))
-        {
-            $razonsoc = $billing_company;
-        }
-        $cliente->RazonSocial = $razonsoc;
-        $cliente->Identificador = get_post_meta($order_id, 'DNI', true);
-        if (empty($cliente->Identificador)) {
-            die(json_encode(array("Exito" => false, "Mensaje" => __('Your DNI is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
-        }
-        $cliente->Email = $billing_email;
-        $cliente->Direccion = $billing_address_1.' '.$billing_address_2;
-        $cliente->Localidad = $billing_city;
-        $cliente->CodigoPostal = $billing_postcode;
-        $cliente->Provincia = $this->woo_ifactura_elegirprovincia(html_entity_decode($billing_state));
-        $cliente->Provincia_str = html_entity_decode($billing_state);
-        $cliente->CondicionImpositiva = get_post_meta($order_id, 'condicionimpositiva', true);
-        if (empty( $cliente->CondicionImpositiva))
-        {
-            die(json_encode(array("Exito" => false, "Mensaje" => __('Tax Treatment is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
-        }
-        $cliente->TipoPersona = $this->woo_ifactura_gettipopersona_id(get_post_meta($order_id, 'DNI', true));
-        if (empty( $cliente->TipoPersona))
-        {
-            die(json_encode(array("Exito" => false, "Mensaje" => __('People Registry Type is incorrect.', 'woo-ifactura')), JSON_PRETTY_PRINT));
-        }
-        $cliente->TipoDocumento = $this->woo_ifactura_tipodocumento(get_post_meta($order_id, 'condicionimpositiva', true));
-        if (empty($cliente->TipoDocumento)) {
-            die(json_encode(array("Exito" => false, "Mensaje" => __('Tax Treatment is invalid.', 'woo-ifactura')), JSON_PRETTY_PRINT));
-        }
-        $cliente->Actualizar = true;
-        $factura->Numero = $order_id;       
-        $autoenvio = get_option('wc_settings_tab_woo_ifactura_autoenvio');        
-        if (!$autoenvio || $autoenvio == 'no') {
-            $autoenvio = false;
-        } else {
-            $autoenvio = true;
-        }
-        $factura->Fecha = date("Y-m-d H:i:s");
-        $factura->FechaVencimiento =  date("Y-m-d H:i:s",strtotime("+10 day"));
-        $factura->FechaDesde = date("Y-m-d H:i:s");
-        $factura->FechaHasta = date("Y-m-d H:i:s", strtotime("+10 day"));
-        $factura->AutoEnvioCorreo = $autoenvio;
-        $factura->PuntoVenta =  intval(get_option('wc_settings_tab_woo_ifactura_prefix'));
-        $factura->FormaPago = 7; // HARDCODEADO A OTROS
-        $factura->CondicionImpositiva = get_option('wc_settings_tab_woo_ifactura_impositive_treatment');
-        $factura->TipoComprobante = $this->woo_ifactura_elegirtipocomprobante(get_option('wc_settings_tab_woo_ifactura_impositive_treatment'), get_post_meta($order_id, 'condicionimpositiva', true));
-        $factura->DetalleFactura = array();
-        $i = 0;
-        $totalfinal = 0;
-        $iva = 0;
-        $alicuotaDetectadaIVA = array();
-        $alicuotaDetectadaTotal = array();
-        $valorNegativosDetectados = false;
-        foreach($Bienes as $linea)
-        {
-            if (floatval($linea['Total']) < 0)
-            {
-                $valorNegativosDetectados = true;
-            }
-            $alicuotaDetectada = $linea['AlicuotaIVA'];
-            $totalfinal = $totalfinal + floatval($linea['Total']);
-            $alicuotaDetectadaTotal[$alicuotaDetectada] = floatval($alicuotaDetectadaTotal[$alicuotaDetectada]) + floatval($linea['Total']);
-        }
-        if ($valorNegativosDetectados)
-        {
-            if (count($alicuotaDetectadaTotal) > 2)
-            {
-                die(json_encode(array("Exito" => false, "Mensaje" => "No se puede calcular el descuento global sobre productos con distintos porcentajes de IVA.", JSON_PRETTY_PRINT)));
-            }
-            else
-            {
-                $tipoIVA = max(array_keys($alicuotaDetectadaTotal));
-                $porcentajeIVA = $this->woo_ifactura_porcentajeIVA($tipoIVA);
-                $valorIVA = round($totalfinal * (1 + $porcentajeIVA),2);
-                $iva = $valorIVA;
-                $factura->DetalleFactura[$i]->Cantidad = 1;
-                $factura->DetalleFactura[$i]->ValorUnitario = round($totalfinal,2);
-                $factura->DetalleFactura[$i]->Total = round($totalfinal,2);
-                $factura->DetalleFactura[$i]->Descripcion =  "Segun venta " . $order_id;
-                $factura->DetalleFactura[$i]->Codigo =  "";
-                $factura->DetalleFactura[$i]->AlicuotaIVA = $tipoIVA;
-                $factura->DetalleFactura[$i]->UnidadMedida = 7;
-                $factura->DetalleFactura[$i]->Bonificacion = 0.0;
-                $factura->DetalleFactura[$i]->IVA = round($valorIVA, 2);
-                $factura->DetalleFactura[$i]->ConceptoFactura = 1; //PRODUCTOS
-                $gettotals = floatval($order->get_total());
-                $totalFactura = floatval(($iva + $totalfinal));
-                if (abs($gettotals - $totalFactura) >= 1)
-                {
-                    die(json_encode(array("Exito" => false, "Mensaje" => "No se puede calcular el descuento global sobre los productos dado que el descuento no esta aplicado sobre los impuestos tambien. Por ende no se puede calcular el IVA verdadero." . $gettotals, JSON_PRETTY_PRINT)));
-                }
-            }
-               
-        }
-        else
-        {
-            $totalfinal = 0;
-            foreach($Bienes as $linea)
-            {
-                $factura->DetalleFactura[$i]->Cantidad = intval($linea['Cantidad']);
-                $factura->DetalleFactura[$i]->ValorUnitario =  floatval($linea['ValorUnitario']);
-                $factura->DetalleFactura[$i]->Total =  floatval($linea['Total']);
-                $factura->DetalleFactura[$i]->Descripcion =  $linea['Descripcion'];
-                $factura->DetalleFactura[$i]->Codigo =  $linea['Codigo'];
-                $factura->DetalleFactura[$i]->AlicuotaIVA = $linea['AlicuotaIVA'];
-                $factura->DetalleFactura[$i]->UnidadMedida = 7;
-                $factura->DetalleFactura[$i]->Bonificacion = $linea['Bonificacion'];
-                $factura->DetalleFactura[$i]->IVA = floatval($linea['IVA']);            
-                $factura->DetalleFactura[$i]->ConceptoFactura = 1; //PRODUCTOS           
-                $totalfinal = $totalfinal + $linea['Total'];
-                $iva = $iva + $linea['IVA'];
-                $i = $i + 1;
-            }
-        }
-       
-        $factura->Cliente = $cliente;
-        $data->Email = get_option('wc_settings_tab_woo_ifactura_user');
-        $data->Password =get_option('wc_settings_tab_woo_ifactura_hash');
-        $data->Factura = $factura;
-        try
-        {
-            //ARMAR JSON
-            $data_string = json_encode($data);            
-            //INICIAR CONEXION
-            $ch = curl_init($url);            
-            //CONFIGURAR CURL
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt(
-                $ch,
-                CURLOPT_HTTPHEADER,
-                array(
-
-                'Content-Type: application/json; charset=utf-8',
-                'Content-Length: ' . strlen($data_string))
-
-            );            
-            //EJECUTAR
-            $resultcurl = curl_exec($ch);            
-            //CERRAR
-            curl_close($ch);                
-            $decode = json_decode($resultcurl);
-            if ($resultcurl != false) {
-                if ($decode->Exito == true) {
-                    update_post_meta($order_id, '_invoice_id', $decode->IdFactura);                
-                    //Estados 1: en espera, 2: list0, 3: error.
-                    update_post_meta($order_id, '_estado_ifactura', 2);
-                    $decode->Mensaje = __('Successful generated.', 'woo-ifactura');
-                }               
-                else
-                {
-                    //$decode->Mensaje = $decode->Mensaje . " " . var_export($data);
-                }
-                die(json_encode($decode,JSON_PRETTY_PRINT));
-            }
-            else
-            {
-                //"No se pudo realizar la comunicación con iFactura. Intente nuevamente más tarde"
-                die(json_encode(array("Exito" => false, "Mensaje" => __('Failed to comunicate.', 'woo-ifactura')),JSON_PRETTY_PRINT));
-            }
-        }
-        catch(Exception $ex)
-        {
-            //"No se pudo realizar la comunicación con iFactura. Intente nuevamente más tarde. "
-            die(json_encode(array("Exito" => false, "Mensaje" => __('Failed to comunicate.', 'woo-ifactura') . $ex->getMessage(),JSON_PRETTY_PRINT)));
-        }
+    {         
+        $order_id = intval($_POST["order"]);      
+        $iFactura = new ConectoriFactura();  
+        $respuesta = $iFactura->woo_ifactura_procesarInvoice($order_id);
+        die(json_encode($respuesta,JSON_PRETTY_PRINT));
     }
-    
+     /**
+    * Procesar la petición AJAX para generar la nota de crédito
+    *
+    **/    
+    public function woo_ifactura_cancel_invoice()
+    {         
+        $order_id = intval($_POST["order"]);      
+        $iFactura = new ConectoriFactura();  
+        $respuesta = $iFactura->woo_ifactura_cancelarInvoice($order_id);
+        die(json_encode($respuesta,JSON_PRETTY_PRINT));
+    }
     public function woo_ifactura_view_invoice()
     {
         $order_id = intval($_POST["order"]);        
-        $invoice_id = get_post_meta($order_id, '_invoice_id', true);        
-        $sandbox = get_option('wc_settings_tab_woo_ifactura_testmode');        
-        if (!$sandbox || $sandbox == 'no') {
-            $url = 'https://app.ifactura.com.ar/Factura/ImprimirExterno';
-        } else {
-            $url = 'https://demo.ifactura.com.ar/Factura/ImprimirExterno';
-        }       
+        $conector = new ConectoriFactura();
+        $url = $conector->getUrlInvoiceGenerada($order_id);
         try {
-            if (!empty($invoice_id))
+            if (!empty($url))
             {
-                $response = array("Exito" => true, "URLPDF" => $url . "/$invoice_id");
+                $response = array("Exito" => true, "URLPDF" => $url);
 
             }
             else
@@ -991,201 +839,87 @@ class Woo_iFactura_Admin
             echo json_encode(array("Exito" => false, "Mensaje" => $e->getMessage()));
         }
     }
-    //FUNCIONES DEL SISTEMA
-    public function woo_ifactura_alicuotaiva($porcentaje)
+    public function woo_ifactura_view_cancel_invoice()
     {
-        //SACADO DE TABLA DE SISTEMA
-        $valor = floatval($porcentaje);
-        if ($valor >= 27)
-        {
-            return 4;
-        }
-        elseif ($valor >= 21)
-        {
-            return 3;
-        }
-        elseif ($valor >= 10.5)
-        {
-            return 2;
-        }
-        elseif ($valor >= 5)
-        {
-            return 5;
-        }
-        elseif ($valor >= 2.5)
-        {
-            return 6;
-        }
-        else
-        {
-            return 1;
-        }
-    }
-    public function woo_ifactura_porcentajeIVA($idIVA)
-    {
-        switch ($idIVA) {
-            case 1:
-                return 0.0;
-                break;
-            case 2:
-                return 10.5;
-                break;
-            case 3:
-                return 21.0;
-                break;
-            case 4:
-                return 27.0;
-                break;
-            case 5:
-                return 5.0;
-                break;
-            default:
-                return 0.0;
-                break;
-        }
-    }
-    public function woo_ifactura_tipodocumento($condicionimpositiva)
-    {
-        if ($condicionimpositiva > 0 && $condicionimpositiva <= 3)
-        {
-            return 1;
-        }
-        else
-        {
-            return 10;
-        }
-    }
-    public function woo_ifactura_elegirprovincia($Provincia)
-    {
-        if ($Provincia == "Ciudad Autónoma de Buenos Aires") {
-            return 1;
-        } elseif ($Provincia == "Buenos Aires") {
-            return 2;
-        } elseif ($Provincia == "Catamarca") {
-            return 3;
-        } elseif ($Provincia == "Córdoba") {
-            return 4;
-        } elseif ($Provincia == "Corrientes") {
-            return 5;
-        } elseif ($Provincia == "Entre Ríos") {
-            return 6;
-        } elseif ($Provincia == "Jujuy") {
-            return 7;
-        } elseif ($Provincia == "Mendoza") {
-            return 8;
-        } elseif ($Provincia == "La Rioja") {
-            return 9;
-        } elseif ($Provincia == "Salta") {
-            return 10;
-        } elseif ($Provincia == "San Juan") {
-            return 11;
-        } elseif ($Provincia == "San Luis") {
-            return 12;
-        } elseif ($Provincia == "Santa Fe") {
-            return 13;
-        } elseif ($Provincia == "Santiago del Estero") {
-            return 14;
-        } elseif ($Provincia == "Tucumán") {
-            return 15;
-        } elseif ($Provincia == "Chaco") {
-            return 16;
-        } elseif ($Provincia == "Chubut") {
-            return 17;
-        } elseif ($Provincia == "Formosa") {
-            return 18;
-        } elseif ($Provincia == "Misiones") {
-            return 19;
-        } elseif ($Provincia == "Neuquén") {
-            return 20;
-        } elseif ($Provincia == "La Pampa") {
-            return 21;
-        } elseif ($Provincia == "Río Negro") {
-            return 22;
-        } elseif ($Provincia == "Santa Cruz") {
-            return 23;
-        } elseif ($Provincia == "Tierra del Fuego") {
-            return 24;
-        }        
-    }
-    public function woo_ifactura_elegirtipocomprobante($condicion_emisor,$condicion_cliente)
-    {
-        if ($condicion_emisor == 1) {
-            if ($condicion_cliente == 1) {
-                return 1; //FACTURA A
-            } elseif ($condicion_cliente == 2) {
-                return 4; //FACTURA B
-            } elseif ($condicion_cliente == 3) {
-                return 4; //FACTURA B
-            } elseif ($condicion_cliente == 4) {
-                return 4; //FACTURA B
-            }
-        } else {
-            return 19; //FACTURA C
-        }
-    }
-    public function woo_ifactura_gettipocondicionimpositiva($id)
-    {
-        switch ($id) {
-            case '1':
-                return "Responsable Inscripto";
-                break;
-            case '2':
-                return "Exento";
-                break;
-            case '3':
-                return "Monotributo";
-                break;
-            case '4':
-                return "Consumidor Final";
-                break;
-            default:
-                return "Desconocido";
-                # code...
-                break;
-        }
-    }
-    public function woo_ifactura_gettipopersona($id)
-    {
-        $dni_str = strval($id);
-        if (strlen($dni_str) > 8)
-        {
-            $codigo_tipo = substr($dni_str,0,2);
-            if ($codigo_tipo == "30" || $codigo_tipo == "33" || $codigo_tipo == "34" )
+        $order_id = intval($_POST["order"]);        
+        $conector = new ConectoriFactura();
+        $url = $conector->getUrlNotaGenerada($order_id);
+        try {
+            if (!empty($url))
             {
-                return "Jurídica";
-            }
-            else if($codigo_tipo == "20" || $codigo_tipo == "23" || $codigo_tipo == "24" || $codigo_tipo == "27")
-            {
-                return "Física";
+                $response = array("Exito" => true, "URLPDF" => $url);
+
             }
             else
             {
-                return "Desconocido";
-            }
-        }
-        else if ($dni_str > 0) {
-            return "Física";
-        }
-        else
-        {
-            return "Desconocido";
+                $response = array("Exito" => false, "Mensaje" => "Comprobante no existe.");
+            }                      
+            echo json_encode($response);              
+            exit;
+        } catch (Exception $e) {
+            echo json_encode(array("Exito" => false, "Mensaje" => $e->getMessage()));
         }
     }
-    public function woo_ifactura_gettipopersona_id($dni)
+    public function woo_ifactura_view_delete_invoices()
     {
-        $dni_str = strval($dni);
-        if (strlen($dni_str) > 8) {
-            $codigo_tipo = substr($dni_str, 0, 2);
-            if ($codigo_tipo == "30" || $codigo_tipo == "33" || $codigo_tipo == "34") {
-                return 2;
-            } elseif ($codigo_tipo == "20" || $codigo_tipo == "23" || $codigo_tipo == "24" || $codigo_tipo == "27") {
-                return 1;
-            } else {
-                return 1;
-            }
-        } else {
-            return 1;
+        $order_id = intval($_POST["order"]);
+        $ordenExtendida = new WCOrdenExtendida($order_id);
+        try
+        {
+            $ordenExtendida->borrarTodo();
+            $response = array("Exito" => true, "Mensaje" => "Comprobantes eliminados. Debe actualizar la orden para actualizar el estado de los comporbantes generados asociados.");
         }
+        catch (Exception $e)
+        {
+            $response = array("Exito" => false, "Mensaje" => $e->getMessage());
+        }
+        echo json_encode($response);
+        exit;
+    }
+    public function woo_ifactura_buttons_column($columns)
+    {
+        foreach ($columns as $column_name => $column_info) {
 
+            $new_columns[$column_name] = $column_info;
+
+            if ('order_total' === $column_name) {
+                $new_columns['order_buttons_wooifactura'] = __('iFactura', 'woo-ifactura');
+            }
+        }
+        return $new_columns;
+    }
+    function woo_ifactura_content_column($column, $order)
+    {
+        if (is_int($order)) {
+            $order_id = $order;
+        } else {
+            $order_id = $order->get_id();
+        }
+        $ordenExtendida = new WCOrdenExtendida($order_id);
+        if ($column === 'order_buttons_wooifactura') {
+            if ($ordenExtendida->invoice_id == '') {
+                echo "Sin facturar";
+                return;
+            } else {
+                switch ($ordenExtendida->estado_ifactura) {
+                    case 1:
+                        /* 1: generación en progreso */
+                        echo __('awaiting invoice', 'woo-ifactura');
+                        break;
+                    case 2:
+                        /* 2: generada correctamente */
+                        $conectoriFactura = new ConectoriFactura();
+                        $url = $conectoriFactura->getUrlInvoiceGenerada($order_id);
+                        echo '<a href="'.$url.'" target="_blank" class="button fy-view-invoice-button"  title="' . __('view invoice', 'woo-ifactura') . '"></a> ';
+                        break;
+                    default:
+                        /* 3: error.  */
+                        echo "Sin datos de factura";
+                        break;
+                }
+                return;
+            }
+        }
+        return;
     }
 }

@@ -6,7 +6,7 @@
  * This file is used to markup the admin-facing aspects of the plugin.
  *
  * @link       https://github.com/fedealvz/Woo-iFactura
- * @since      0.1
+ * @since      2.0
  *
  * @package    woo-ifactura
  * @subpackage woo-ifactura/admin/partials

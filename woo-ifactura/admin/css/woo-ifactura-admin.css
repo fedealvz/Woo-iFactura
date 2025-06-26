@@ -9,7 +9,29 @@
     background-position: 2px 2px;
     cursor: pointer;
 }
+.wp-core-ui .button.fy-view-cancelinvoice-button {
+    content: "";
+    background-image: url("img/invoice-download.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+    cursor: pointer;
+}
 .wp-core-ui .button.fy-invoice-button {
+    content: "";
+    background-image: url("img/invoice.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+    cursor: pointer;
+}
+.wp-core-ui .button.fy-cancelinvoice-button {
     content: "";
     background-image: url("img/invoice.svg");
     text-indent: -9999px;
@@ -29,6 +51,17 @@
     width: 26px;
     height: 26px !important;
     background-position: 2px 2px;
+}
+.wp-core-ui .fy-deleteinvoice-button {
+    content: "";
+    background-image: url("img/invoice.svg");
+    text-indent: -9999px;
+    background-size: 20px;
+    background-repeat: no-repeat;
+    width: 26px;
+    height: 26px !important;
+    background-position: 2px 2px;
+    cursor: pointer;
 }
 #wc_settings_tab_woo_ifactura_impositive_treatment,
 #wc_settings_tab_woo_ifactura_condicion_venta,
