@@ -165,7 +165,7 @@ class Woo_iFactura_Admin
     public static function woo_ifactura_add_condicionimpositiva_field_to_register()
     {
         if (! empty($_POST['billing_condicionimpositiva_ifactura'])) {
-            $elegido = esc_attr_e($_POST['billing_condicionimpositiva_ifactura']);
+            $elegido = esc_attr($_POST['billing_condicionimpositiva_ifactura']);
         }
          ?>
 			<p class="form-row form-row-first">
