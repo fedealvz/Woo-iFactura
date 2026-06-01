@@ -64,7 +64,7 @@ class Woo_iFactura
     {
         $this->plugin_name = 'iFactura para WooCommerce';
         
-        $this->version = '2.0';
+        $this->version = '2.0.1';
 
         $this->load_dependencies();
         
