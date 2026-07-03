@@ -3,7 +3,7 @@
 /**
 * Plugin Name: Woo iFactura
 * Description: Woo iFactura integra WooCommerce con el servicio de factura electrónica de iFactura.com.ar
-* Version: 2.0
+* Version: 2.0.1
 * Author: Federico Alvarez
 * Author URI: https://github.com/fedealvz/Woo-iFactura
 * Text Domain: woo-ifactura
@@ -18,7 +18,7 @@
 * 
 * @author Federico Alvarez
 * @package woo-ifactura
-* @version 2.0
+* @version 2.0.1
 */
 
 // If this file is called directly, abort.

@@ -961,37 +961,33 @@ class ConectoriFactura
     {
         global $woocommerce;
         $ordenExtendida = new WCOrdenExtendida($order_id);
-        $order_meta = get_post_meta($order_id);
-        $billing_currency = $order_meta["_order_currency"][0];
-        $billing_first_name = $order_meta["_billing_first_name"][0];
-        $billing_last_name = $order_meta["_billing_last_name"][0];
-        $billing_email = $order_meta["_billing_email"][0];
-        $billing_postcode = $order_meta["_billing_postcode"][0];
-        $payment_method = $order_meta["_payment_method"][0];
-        $billing_address_1 = $order_meta["_billing_address_1"][0];
-        $billing_address_2 = "";
-        //PORQUE PUEDE ESTAR VACIO O NULO
-        if (key_exists("_billing_address_2",$order_meta))
-        {
-            $billing_address_2 = $order_meta["_billing_address_2"][0];
-        }        
-        $billing_city = $order_meta["_billing_city"][0];
-        $billing_phone = $order_meta["_billing_phone"][0];
-        $billing_company = $order_meta["_billing_company"][0];
+        $order = wc_get_order($order_id);
+        $billing_currency   = $order->get_currency();
+        $billing_first_name = $order->get_billing_first_name();
+        $billing_last_name  = $order->get_billing_last_name();
+        $billing_email      = $order->get_billing_email();
+        $billing_postcode   = $order->get_billing_postcode();
+        $payment_method     = $order->get_payment_method();
+        $billing_address_1  = $order->get_billing_address_1();
+        $billing_address_2  = $order->get_billing_address_2();
+        $billing_city       = $order->get_billing_city();
+        $billing_phone      = $order->get_billing_phone();
+        $billing_company    = $order->get_billing_company();
+        $customer_user      = $order->get_customer_id();
         if (class_exists("WC_Countries")) {
             /* WC > 2.3.0 */
             $countries = new WC_Countries();
             $states = $countries->get_states("AR");
-            $billing_state = $states[$order_meta["_billing_state"][0]]; // SOLO ARGENTINA
+            $billing_state = $states[$order->get_billing_state()]; // SOLO ARGENTINA
         } else {
             global $states;
-            $billing_state = $states["AR"][$order_meta["_billing_state"][0]]; // SOLO ARGENTINA
+            $billing_state = $states["AR"][$order->get_billing_state()]; // SOLO ARGENTINA
         }
-        $customer_user = $order_meta["_customer_user"][0];
         /*Patch for DOS61*/
-        if (isset($order_meta['_billing_street'])) {
-            $billing_address_1 = $order_meta['_billing_street'][0].' '.$order_meta['_billing_number'][0];
-            $billing_address_2 = $order_meta['_billing_floor'][0].' '.$order_meta['_billing_apartment'][0];
+        $billing_street = $order->get_meta('_billing_street');
+        if (!empty($billing_street)) {
+            $billing_address_1 = $billing_street . ' ' . $order->get_meta('_billing_number');
+            $billing_address_2 = $order->get_meta('_billing_floor') . ' ' . $order->get_meta('_billing_apartment');
         }
         $cliente = new ClienteiFactura();
         $razonsoc = $billing_first_name .  " " . $billing_last_name;
