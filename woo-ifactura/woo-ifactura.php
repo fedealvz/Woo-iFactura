@@ -3,22 +3,23 @@
 /**
 * Plugin Name: Woo iFactura
 * Description: Woo iFactura integra WooCommerce con el servicio de factura electrónica de iFactura.com.ar
-* Version: 2.0.1
+* Version: 2.0.2
 * Author: Federico Alvarez
 * Author URI: https://github.com/fedealvz/Woo-iFactura
 * Text Domain: woo-ifactura
 * Domain Path: /languages/
 * License: GPL v3 or later
+* Tested up to: 7.1
 * WC requires at least: 7.3.0
-* WC tested up to: 9.9.5
+* WC tested up to: 11.0.1
 *
 * Copyright: © 2019-2025 Federico Alvarez
 * License: GNU General Public License v3.0
 * License URI: http://www.gnu.org/licenses/gpl-3.0.html
-* 
+*
 * @author Federico Alvarez
 * @package woo-ifactura
-* @version 2.0.1
+* @version 2.0.2
 */
 
 // If this file is called directly, abort.

@@ -15,7 +15,8 @@
             var esto = $(this);
             var data = {
                 action: 'woo_ifactura_do_ajax_request',
-                order: order_id
+                order: order_id,
+                nonce: fyifacturaAdminVars.nonce
             }
             var awaitingButton = '<a class="button tips fy-awaiting-button" data-invoice="0" href="#"></a> Generando...';
             var botonAnterior = td.html();
@@ -69,7 +70,8 @@
             var esto = $(this);
             var data = {
                 action: 'woo_ifactura_do_cancel_ajax_request',
-                order: order_id
+                order: order_id,
+                nonce: fyifacturaAdminVars.nonce
             }
             var awaitingButton = '<a class="button tips fy-awaiting-button" data-invoice="0" href="#">Esperando generación</a> Nota de crédito';
             td.html(awaitingButton);
@@ -120,7 +122,8 @@ function viewInvoice() {
     }
     var data = {
         action: 'woo_ifactura_view_ajax_request',
-        order: order_id
+        order: order_id,
+        nonce: fyifacturaAdminVars.nonce
     }
     //console.log(data);
     jQuery.ajax({
@@ -149,7 +152,8 @@ function viewCancelInvoice() {
     }
     var data = {
         action: 'woo_ifactura_view_cancel_ajax_request',
-        order: order_id
+        order: order_id,
+        nonce: fyifacturaAdminVars.nonce
     }
     //console.log(data);
     jQuery.ajax({
@@ -179,7 +183,8 @@ function deleteInvoices()
     }
     var data = {
         action: 'woo_ifactura_delete_ajax_request',
-        order: order_id
+        order: order_id,
+        nonce: fyifacturaAdminVars.nonce
     }
     var td = jQuery(this).closest('p');
     var awaitingButton = '<a class="button tips fy-awaiting-button" data-invoice="0" href="#"></a> Borrando';

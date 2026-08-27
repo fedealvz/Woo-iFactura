@@ -85,7 +85,10 @@ class Woo_iFactura_Admin
     public function enqueue_scripts()
     {
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/woo-ifactura-admin.js', array( 'jquery' ), $this->version, false);
-        wp_localize_script($this->plugin_name, 'fyifacturaAdminVars', array('ifacturaUrl' => plugin_dir_url(__FILE__) ));
+        wp_localize_script($this->plugin_name, 'fyifacturaAdminVars', array(
+            'ifacturaUrl' => plugin_dir_url(__FILE__),
+            'nonce'       => wp_create_nonce('woo_ifactura_ajax_nonce'),
+        ));
     }
     
     public function add_settings_tab($settings_tabs)
@@ -132,21 +135,24 @@ class Woo_iFactura_Admin
     }
     
     /**
-     * Gets order id in WooCommerce 3.0 and older versions
+     * Gets order id.
+     *
+     * The plugin has required WooCommerce 7.3.0+ since the "WC requires
+     * at least" header was added, so the pre-3.0 $order->id fallback this
+     * used to have was dead code - and worse, the `$woocommerce->version
+     * >= '3.0'` check that guarded it was a *string* comparison, which
+     * evaluates false for any WooCommerce version >= 10.0 (e.g. "11.0.1"
+     * >= "3.0" is false lexically), so on current WooCommerce this method
+     * was silently falling into the deprecated $order->id branch and
+     * triggering a "Order properties should not be accessed directly"
+     * doing_it_wrong notice on every call.
      *
      * @since 0.0.3
      */
-    
     public function get_order_id($order)
     {
-        global $woocommerce;        
-        if ($woocommerce->version >= '3.0') {
-            $order_id = $order->get_id();
-        } else {
-            $order_id = $order->id;
-        }        
-        return $order_id;
-    }    
+        return $order->get_id();
+    }
     /**
     * Adds DNI to register form
     *
@@ -801,26 +807,38 @@ class Woo_iFactura_Admin
     *
     **/    
     public function woo_ifactura_invoice()
-    {         
-        $order_id = intval($_POST["order"]);      
-        $iFactura = new ConectoriFactura();  
+    {
+        check_ajax_referer('woo_ifactura_ajax_nonce', 'nonce');
+        if (! current_user_can('manage_woocommerce')) {
+            die(json_encode(array("Exito" => false, "Mensaje" => "No tenés permisos para realizar esta acción.")));
+        }
+        $order_id = intval($_POST["order"]);
+        $iFactura = new ConectoriFactura();
         $respuesta = $iFactura->woo_ifactura_procesarInvoice($order_id);
         die(json_encode($respuesta,JSON_PRETTY_PRINT));
     }
      /**
     * Procesar la petición AJAX para generar la nota de crédito
     *
-    **/    
+    **/
     public function woo_ifactura_cancel_invoice()
-    {         
-        $order_id = intval($_POST["order"]);      
-        $iFactura = new ConectoriFactura();  
+    {
+        check_ajax_referer('woo_ifactura_ajax_nonce', 'nonce');
+        if (! current_user_can('manage_woocommerce')) {
+            die(json_encode(array("Exito" => false, "Mensaje" => "No tenés permisos para realizar esta acción.")));
+        }
+        $order_id = intval($_POST["order"]);
+        $iFactura = new ConectoriFactura();
         $respuesta = $iFactura->woo_ifactura_cancelarInvoice($order_id);
         die(json_encode($respuesta,JSON_PRETTY_PRINT));
     }
     public function woo_ifactura_view_invoice()
     {
-        $order_id = intval($_POST["order"]);        
+        check_ajax_referer('woo_ifactura_ajax_nonce', 'nonce');
+        if (! current_user_can('manage_woocommerce')) {
+            die(json_encode(array("Exito" => false, "Mensaje" => "No tenés permisos para realizar esta acción.")));
+        }
+        $order_id = intval($_POST["order"]);
         $conector = new ConectoriFactura();
         $url = $conector->getUrlInvoiceGenerada($order_id);
         try {
@@ -841,7 +859,11 @@ class Woo_iFactura_Admin
     }
     public function woo_ifactura_view_cancel_invoice()
     {
-        $order_id = intval($_POST["order"]);        
+        check_ajax_referer('woo_ifactura_ajax_nonce', 'nonce');
+        if (! current_user_can('manage_woocommerce')) {
+            die(json_encode(array("Exito" => false, "Mensaje" => "No tenés permisos para realizar esta acción.")));
+        }
+        $order_id = intval($_POST["order"]);
         $conector = new ConectoriFactura();
         $url = $conector->getUrlNotaGenerada($order_id);
         try {
@@ -862,6 +884,10 @@ class Woo_iFactura_Admin
     }
     public function woo_ifactura_view_delete_invoices()
     {
+        check_ajax_referer('woo_ifactura_ajax_nonce', 'nonce');
+        if (! current_user_can('manage_woocommerce')) {
+            die(json_encode(array("Exito" => false, "Mensaje" => "No tenés permisos para realizar esta acción.")));
+        }
         $order_id = intval($_POST["order"]);
         $ordenExtendida = new WCOrdenExtendida($order_id);
         try
@@ -878,6 +904,7 @@ class Woo_iFactura_Admin
     }
     public function woo_ifactura_buttons_column($columns)
     {
+        $new_columns = array();
         foreach ($columns as $column_name => $column_info) {
 
             $new_columns[$column_name] = $column_info;
